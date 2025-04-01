@@ -2,11 +2,16 @@
 /*
 
 # Allowlist
+!.gitignore
 !README.md
+
 !/nvim
 !/ghostty
+
+# We only want one file from zed's config
+!/zed/
+/zed/*
 !/zed/settings.json
 
 
-#
-!.gitignore
+
