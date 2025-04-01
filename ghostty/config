@@ -1,0 +1,6 @@
+theme = PaulMillr
+split-divider-color = #555555
+window-padding-x = 5
+cursor-color = #00ff00
+cursor-style = underline
+shell-integration-features = no-cursor

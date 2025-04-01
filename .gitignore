@@ -1,0 +1,11 @@
+# Ignore all by default
+/*
+
+# Allowlist
+!/nvim
+!/ghostty
+!/zed/settings.json
+
+
+#
+!.gitignore
