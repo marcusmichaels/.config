@@ -2,6 +2,7 @@
 /*
 
 # Allowlist
+!README.md
 !/nvim
 !/ghostty
 !/zed/settings.json
