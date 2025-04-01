@@ -2,7 +2,7 @@
 Configuration files for `~/.config/<app>`
 
 ### Current configurations: 
-* neovim [~/.config/nvim]
+* neovim [~/.config/nvim/*]
 * ghostty [~/.config/ghostty/config]
 * zed [~/.config/zed/settings.json]
 
