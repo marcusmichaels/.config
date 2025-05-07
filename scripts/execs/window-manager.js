@@ -15,26 +15,31 @@ async function executeAppleScript(script) {
   });
 }
 
-async function setWindowPosition(app, position, width, height) {
+async function setWindowPosition(app, x, y, width, height, delay = 0) {
   const script = `
     tell application "${app}"
       activate
-      delay 0.5
     end tell
 
+    delay "${delay}"
+
     tell application "System Events"
-      tell process "${app}"
-        if (count of windows) > 0 then
-          set position of front window to {${position.x}, ${position.y}}
-          set size of front window to {${width}, ${height}}
-        end if
-      end tell
+      try
+        tell process "${app}"
+          set win to front window
+
+          -- Set position and size
+          set position of win to {${x}, ${y}}
+          set size of win to {${width}, ${height}}
+        end tell
+      end try
     end tell
   `;
 
   try {
+    // Execute the script to set window position and handle minimized state
     await executeAppleScript(script);
-    console.log(`Positioned ${app} to ${position.x}, ${position.y} with size ${width}x${height}`);
+    console.log(`Positioned ${app} to ${x}, ${y} with size ${width}x${height}`);
   } catch (err) {
     console.error(`Error setting window position for ${app}:`, err);
   }
@@ -44,19 +49,14 @@ async function setWindowPosition(app, position, width, height) {
 const layouts = {
   home: [
     { app: 'ghostty', x: -1080, y: -262, width: 1079, height: 708 },
-    { app: 'Slack', x: -1080, y: 447, width: 1080, height: 989 },
-    { app: 'Arc', x: 1439, y: 25, width: 2001, height: 1415 },
+    { app: 'Terminal', x: 1621, y: 160, width: 1080, height: 1018 },
+    { app: 'Arc', x: 1438, y: 25, width: 2002, height: 1415 },
     { app: 'thunderbird', x: -1080, y: 1437, width: 1080, height: 836 },
-    { app: 'zed', x: 1, y: 25, width: 1437, height: 1415 }
-  ],
-  work: [
-    { app: 'Safari', position: { x: 0, y: 0 }, width: 1080, height: 360 },
-    { app: 'Thunderbird', position: { x: 0, y: 360 }, width: 1080, height: 360 },
-    { app: 'Terminal', position: { x: 0, y: 720 }, width: 1080, height: 360 },
-    { app: 'Zed', position: { x: 1080, y: 0 }, width: 960, height: 1080 },
-    { app: 'Arc', position: { x: 2040, y: 0 }, width: 960, height: 1080 }
+    { app: 'Slack', x: -1080, y: 447, width: 1080, height: 989 },
+    { app: 'zed', x: 0, y: 25, width: 1437, height: 1415 }
   ]
 };
+
 
 // Function to arrange windows based on a given layout
 async function arrangeWindows(layoutName) {
@@ -70,8 +70,8 @@ async function arrangeWindows(layoutName) {
   }
 
   // Loop through each window in the layout and set its position
-  for (const { app, position, width, height } of layout) {
-    await setWindowPosition(app, position, width, height);
+  for (const { app, x, y, width, height } of layout) {
+    await setWindowPosition(app, x, y, width, height, 0.5);
   }
 
   console.log(`Finished arranging windows for the "${layoutName}" layout.`);
@@ -80,4 +80,3 @@ async function arrangeWindows(layoutName) {
 // Get the layout argument (home or work)
 const layoutName = process.argv[2] || 'home'; // Default to 'home' if no argument is passed
 arrangeWindows(layoutName);
-
