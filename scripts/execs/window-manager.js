@@ -54,6 +54,13 @@ const layouts = {
     { app: 'thunderbird', x: -1080, y: 1437, width: 1080, height: 836 },
     { app: 'Slack', x: -1080, y: 447, width: 1080, height: 989 },
     { app: 'zed', x: 0, y: 25, width: 1437, height: 1415 }
+  ],
+  work: [
+    { app: 'ghostty', x: 4018, y: 836, width: 790, height: 1125 },
+    { app: 'Terminal', x: 101, y: 65, width: 1089, height: 1015 },
+    { app: 'Arc', x: 0, y: 25, width: 1674, height: 1667 },
+    { app: 'Slack', x: 3008, y: 836, width: 1009, height: 1125 },
+    { app: 'zed', x: 1675, y: 25, width: 1332, height: 1665 }
   ]
 };
 
