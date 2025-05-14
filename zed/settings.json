@@ -27,7 +27,6 @@
   "vim": {
     "cursor_shape": {
       "normal": "hollow",
-      "insert": "bar",
       "replace": "underline",
       "visual": "block"
     }
@@ -41,7 +40,11 @@
     "dark": "One Dark"
   },
   "experimental.theme_overrides": {
-    "search.match_background": "#ff00f090"
-    // "editor.active_line.background": "#00000080"
+    "search.match_background": "#ff00f090",
+    "players": [
+      {
+        "selection": "#FF00FF20"
+      }
+    ]
   }
 }
