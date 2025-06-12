@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { exec } from 'child_process';
+import { exec } from "child_process";
 
 // Helper function to execute AppleScript
 async function executeAppleScript(script) {
@@ -45,23 +45,71 @@ async function setWindowPosition(app, x, y, width, height, delay = 0) {
   }
 }
 
+async function getAllWindows() {
+  const script = `
+    tell application "System Events"
+      set windowInfo to ""
+
+      -- Get all processes that have windows open
+      set appProcesses to (every process whose background only is false)
+
+      -- Loop through each process
+      repeat with appProc in appProcesses
+          set appName to name of appProc
+
+          try
+              -- Loop through each window of the app
+              repeat with win in (every window of appProc)
+                  set winPos to position of win
+                  set winSize to size of win
+
+                  -- Extract the position and size
+                  set xPos to item 1 of winPos
+                  set yPos to item 2 of winPos
+                  set width to item 1 of winSize
+                  set height to item 2 of winSize
+
+                  -- Add window info to the string
+                  set windowInfo to windowInfo & "{\\"app\\":"  & "\\"" & appName & "\\", x:" & xPos & ", y:" & yPos & ", width:" & width & ", height:" & height & "},"
+              end repeat
+          end try
+      end repeat
+    end tell
+
+    -- Return the window info as a string
+    return windowInfo
+  `;
+
+  try {
+    const rawResult = await executeAppleScript(script);
+    // console.log(rawResult);
+    let cleaned = rawResult.trim().replace(/,\s*$/, "");
+
+    cleaned = `[${cleaned}]`;
+    cleaned = cleaned.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":'); // keys
+    const result = JSON.parse(cleaned);
+    console.log(result);
+  } catch (err) {
+    console.error("Error getting window information:", err);
+  }
+}
+
 // Layouts to be manually set
 const layouts = {
   home: [
-    { app: 'ghostty', x: -1080, y: -262, width: 1079, height: 708 },
-    { app: 'Arc', x: 1438, y: 25, width: 2002, height: 1415 },
-    { app: 'thunderbird', x: -1080, y: 1437, width: 1080, height: 836 },
-    { app: 'Slack', x: -1080, y: 447, width: 1080, height: 989 },
-    { app: 'zed', x: 0, y: 25, width: 1437, height: 1415 }
+    { app: "ghostty", x: -1080, y: -262, width: 1079, height: 708 },
+    { app: "Arc", x: 1438, y: 25, width: 2002, height: 1415 },
+    { app: "thunderbird", x: -1080, y: 1437, width: 1080, height: 836 },
+    { app: "Slack", x: -1080, y: 447, width: 1080, height: 989 },
+    { app: "zed", x: 0, y: 25, width: 1437, height: 1415 },
   ],
   work: [
-    { app: 'ghostty', x: 4018, y: 836, width: 790, height: 1125 },
-    { app: 'Arc', x: 0, y: 25, width: 1674, height: 1667 },
-    { app: 'Slack', x: 3008, y: 836, width: 1009, height: 1125 },
-    { app: 'zed', x: 1675, y: 25, width: 1332, height: 1665 }
-  ]
+    { app: "ghostty", x: 4018, y: 836, width: 790, height: 1125 },
+    { app: "Arc", x: 0, y: 25, width: 1674, height: 1667 },
+    { app: "Slack", x: 3008, y: 836, width: 1009, height: 1125 },
+    { app: "zed", x: 1675, y: 25, width: 1332, height: 1665 },
+  ],
 };
-
 
 // Function to arrange windows based on a given layout
 async function arrangeWindows(layoutName) {
@@ -83,5 +131,10 @@ async function arrangeWindows(layoutName) {
 }
 
 // Get the layout argument (home or work)
-const layoutName = process.argv[2] || 'home'; // Default to 'home' if no argument is passed
-arrangeWindows(layoutName);
+const layoutName = process.argv[2] || "home"; // Default to 'home' if no argument is passed
+
+if (process.argv[2] === "get") {
+  getAllWindows();
+} else {
+  arrangeWindows(layoutName);
+}
