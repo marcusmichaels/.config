@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { exec } from 'child_process';
+import { exec } from "child_process";
 
 // Helper function to execute AppleScript and return the result
 async function executeAppleScript(script) {
@@ -54,17 +54,16 @@ async function getAllWindows() {
   try {
     const rawResult = await executeAppleScript(script);
     // console.log(rawResult);
-    let cleaned = rawResult.trim().replace(/,\s*$/, '');
+    let cleaned = rawResult.trim().replace(/,\s*$/, "");
 
     cleaned = `[${cleaned}]`;
-    cleaned = cleaned.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');       // keys
+    cleaned = cleaned.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":'); // keys
     const result = JSON.parse(cleaned);
     console.log(result);
-
   } catch (err) {
     console.error("Error getting window information:", err);
   }
-  }
+}
 
-  // Call the function to get all window information
-  getAllWindows();
+// Call the function to get all window information
+getAllWindows();
