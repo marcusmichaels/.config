@@ -39,6 +39,7 @@
     "light": "SynthWave 84 Dark",
     "dark": "One Dark"
   },
+  "format_on_save": "on",
   "experimental.theme_overrides": {
     "search.match_background": "#ff00f090",
     "players": [
