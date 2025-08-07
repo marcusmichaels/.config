@@ -8,11 +8,26 @@
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
   "agent": {
+    "dock": "right",
+    "default_profile": "write",
     "default_model": {
       "provider": "ollama",
-      "model": "deepseek-coder:latest"
+      "model": "phi4-mini:latest"
     },
-    "version": "2"
+  },
+  "language_models": {
+    "ollama": {
+      "api_url": "http://localhost:11434",
+      "available_models": [
+        {
+          "name": "phi4-mini:latest",
+          "max_tokens": 16384,
+          "supports_tools": true,
+          "supports_thinking": false,
+          "supports_images": true
+        }
+      ]
+    }
   },
   "preferred_line_length": 140,
   "soft_wrap": "bounded",
