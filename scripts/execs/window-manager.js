@@ -9,7 +9,7 @@ async function executeAppleScript(script) {
       if (err || stderr) {
         reject(`Error: ${stderr || err}`);
       } else {
-        resolve(stdout);
+        resolve(stdout.trim());
       }
     });
   });
@@ -109,6 +109,14 @@ const layouts = {
     { app: "Slack", x: 3008, y: 836, width: 1009, height: 1125 },
     { app: "zed", x: 1675, y: 25, width: 1332, height: 1665 },
   ],
+  "work-v": [
+    { app: 'Finder', x: 180, y: 2268, width: 920, height: 464 },
+    { app: 'ghostty', x: -1440, y: 370, width: 1440, height: 1923 },
+    { app: 'zed', x: 0, y: 1048, width: 1692, height: 1095 },
+    { app: 'Spotify', x: -1440, y: 2294, width: 1439, height: 600 },
+    { app: 'Arc', x: 0, y: 25, width: 1692, height: 1024 },
+    { app: 'Slack', x: 0, y: 2144, width: 1692, height: 864 }
+  ]
 };
 
 // Function to arrange windows based on a given layout
