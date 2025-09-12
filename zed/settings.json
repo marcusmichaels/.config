@@ -12,8 +12,8 @@
     "default_profile": "write",
     "default_model": {
       "provider": "ollama",
-      "model": "phi4-mini:latest"
-    },
+      "model": "qwen3:1.7b"
+    }
   },
   "language_models": {
     "ollama": {
@@ -56,6 +56,10 @@
   },
   "experimental.theme_overrides": {
     "search.match_background": "#ff00f090",
+    "warning.background": "#FF00FF20",
+    // "hint.background": "#FF00FF20",
+    // "error.background": "#FF00FF20",
+    // "info.background": "#FF00FF20",
     "players": [
       {
         "selection": "#FF00FF20"
