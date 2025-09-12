@@ -110,12 +110,11 @@ const layouts = {
     { app: "zed", x: 1675, y: 25, width: 1332, height: 1665 },
   ],
   "work-v": [
-    { app: 'Finder', x: 180, y: 2268, width: 920, height: 464 },
-    { app: 'ghostty', x: -1440, y: 370, width: 1440, height: 1923 },
-    { app: 'zed', x: 0, y: 1048, width: 1692, height: 1095 },
-    { app: 'Spotify', x: -1440, y: 2294, width: 1439, height: 600 },
-    { app: 'Arc', x: 0, y: 25, width: 1692, height: 1024 },
-    { app: 'Slack', x: 0, y: 2144, width: 1692, height: 864 }
+    { app: 'ghostty', x: -1693, y: 1311, width: 1692, height: 1421 },
+    { app: 'Slack', x: 0, y: 1062, width: 1440, height: 897 },
+    { app: 'zed', x: -1692, y: -251, width: 1691, height: 1561 },
+    { app: 'Arc', x: 0, y: 25, width: 1440, height: 1036 },
+    { app: 'Spotify', x: 1, y: 1960, width: 1440, height: 600 }
   ]
 };
 
