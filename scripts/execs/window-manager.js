@@ -104,17 +104,12 @@ const layouts = {
     { app: "zed", x: 0, y: 25, width: 1437, height: 1415 },
   ],
   work: [
-    { app: "ghostty", x: 4018, y: 836, width: 790, height: 1125 },
-    { app: "Arc", x: 0, y: 25, width: 1674, height: 1667 },
-    { app: "Slack", x: 3008, y: 836, width: 1009, height: 1125 },
-    { app: "zed", x: 1675, y: 25, width: 1332, height: 1665 },
-  ],
-  "work-v": [
-    { app: 'ghostty', x: -1693, y: 1311, width: 1692, height: 1421 },
-    { app: 'Slack', x: 0, y: 1062, width: 1440, height: 897 },
-    { app: 'zed', x: -1692, y: -251, width: 1691, height: 1561 },
-    { app: 'Arc', x: 0, y: 25, width: 1440, height: 1036 },
-    { app: 'Spotify', x: 1, y: 1960, width: 1440, height: 600 }
+    { app: 'Slack', x: -1692, y: 1323, width: 1692, height: 840 },
+    { app: 'ghostty', x: 0, y: 1409, width: 1691, height: 1599 },
+    { app: 'Arc', x: 0, y: 25, width: 1692, height: 1383 },
+    { app: 'Spotify', x: -1692, y: 2164, width: 800, height: 844 },
+    { app: 'zed', x: -1692, y: 25, width: 1692, height: 1297 },
+    { app: 'Mail', x: -891, y: 2164, width: 891, height: 844 }
   ]
 };
 
