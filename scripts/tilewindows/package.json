@@ -1,0 +1,15 @@
+{
+  "name": "tilewindows",
+  "version": "0.1.0",
+  "author": "Marcus Michaels",
+  "description": "A tiny no-dependency CLI window manager for macOS",
+  "bin": {
+    "tilewindows": "tilewindows.js"
+  },
+  "type": "module",
+  "private": false,
+  "files": [
+    "tilewindows.js",
+    "README.md"
+  ]
+}

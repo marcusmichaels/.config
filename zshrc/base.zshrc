@@ -17,7 +17,8 @@ function dpr() {
 
 alias nodecontainer="docker run --rm -it --network none --cap-drop ALL -p 3000:3000 -v "$(pwd)":/app -w /app node:22 /bin/bash"
 
-alias tilewindows="~/.config/scripts/tilewindows/tilewindows.js"
+# Using `npm link` instead of this
+# alias tilewindows="~/.config/scripts/tilewindows/tilewindows.js"
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
