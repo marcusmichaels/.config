@@ -11,6 +11,9 @@ import { fileURLToPath } from "url";
 import path from "path";
 import os from "os";
 
+const PROJECT_FILE = path.join(process.cwd(), "tilewindows.config.json");
+const FORCE_HERE = process.argv.includes("--here");
+
 const SCRIPT_FILE = fileURLToPath(import.meta.url);
 const SCRIPT_DIR = path.dirname(SCRIPT_FILE);
 
@@ -18,30 +21,40 @@ const SCRIPT_DIR = path.dirname(SCRIPT_FILE);
 const COUPLED_CONFIG = path.join(SCRIPT_DIR, ".", "tilewindows.config.json");
 const LEGACY_DOT = path.join(os.homedir(), ".config", "tilewindows.config.json");
 
+
 function getConfigPath() {
   // 1) CLI flag
-  const flag = process.argv.find((a) => a.startsWith("--config="));
+  const flag = process.argv.find(a => a.startsWith("--config="));
   if (flag) return flag.split("=")[1];
 
   // 2) Env var
   if (process.env.TILEWINDOWS_CONFIG) return process.env.TILEWINDOWS_CONFIG;
 
-  // 3) Script-relative (keeps it coupled to your ~/.config/scripts tree)
+  // 3) Project file (forced via --here)
+  if (FORCE_HERE) return PROJECT_FILE;
+
+  // 4) Auto-project (if file exists in CWD)
+  try {
+    if (fs.existsSync(PROJECT_FILE)) return PROJECT_FILE;
+  } catch {}
+
+  // 5) Script-relative (coupled)
   if (COUPLED_CONFIG) return COUPLED_CONFIG;
 
-  // 4) XDG
+  // 6) XDG
   if (process.env.XDG_CONFIG_HOME) {
     return path.join(process.env.XDG_CONFIG_HOME, "tilewindows.config.json");
   }
 
-  // 5) macOS Application Support
-  if (process.platform === "darwin") {
+  // 7) macOS Application Support
+  if (process.platform === "darwin")) {
     return path.join(os.homedir(), "Library", "Application Support", "tilewindows.config.json");
   }
 
-  // 6) ~/.config fallback
+  // 8) ~/.config fallback
   return LEGACY_DOT;
 }
+
 
 // Use the resolved path everywhere below
 const CONFIG_FILE = getConfigPath();
@@ -333,6 +346,18 @@ async function applyLayout(name) {
   console.log(`Done.`);
 }
 
+function cmdInit() {
+  const target = PROJECT_FILE; // always in CWD
+  const dir = path.dirname(target);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(target)) {
+    fs.writeFileSync(target, JSON.stringify({ layouts: {} }, null, 2) + "\n");
+    console.log(`Created ${target}`);
+  } else {
+    console.log(`Already exists: ${target}`);
+  }
+}
+
 async function cmdGet() {
   const windows = await getAllWindows();
   console.log(JSON.stringify(windows, null, 2));
@@ -400,20 +425,27 @@ Usage:
   tilewindows print <layout>   Show JSON for a saved layout
   tilewindows rm <layout>      Remove a saved layout
   tilewindows path             Show config file location
+  tilewindows init             Create an empty .tilewindows.json in the current directory
   tilewindows help             Show this help message
+
+Project configs:
+  If tilewindows.config.json exists in the current directory, it's used automatically.
+  Use --here to force using CWD/tilewindows.config.json (creating on first save).
 
 Environment:
   TILEWINDOWS_CONFIG=/path/to/tilewindows.config.json   Use a specific config file
-  XDG_CONFIG_HOME=~/.config                 Standard XDG base dir (if set)
+  XDG_CONFIG_HOME=~/.config                             Standard XDG base dir (if set)
 
 Flags:
   --config=/path/to/tilewindows.config.json             Explicit config location
+  --here                                                Use CWD/tilewindows.config.json
 
-Config resolution (in order):
-  --config → TILEWINDOWS_CONFIG → script-relative → $XDG_CONFIG_HOME → ~/Library/Application Support → ~/.config
-
+Config resolution (highest → lowest):
+  --config → TILEWINDOWS_CONFIG → (--here or CWD/tilewindows.config.json if exists)
+  → script-relative → $XDG_CONFIG_HOME → ~/Library/Application Support → ~/.config
 `);
 }
+
 
 // ---------- CLI parsing ----------
 const [, , cmdOrLayout, maybeArg] = process.argv;
@@ -421,6 +453,7 @@ const [, , cmdOrLayout, maybeArg] = process.argv;
 // Back-compat: `tilewindows work` should apply layout "work"
 const command = (() => {
   switch (cmdOrLayout) {
+    case "init":
     case "apply":
     case "get":
     case "save":
@@ -440,6 +473,9 @@ const command = (() => {
 (async () => {
   try {
     switch (command) {
+      case "init":
+        cmdInit();
+        break;
       case "apply": {
         const name = cmdOrLayout === "apply" ? maybeArg || "home" : cmdOrLayout || "home";
         await applyLayout(name);
