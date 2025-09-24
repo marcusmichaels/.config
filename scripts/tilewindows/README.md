@@ -13,9 +13,19 @@ mkdir -p ~/.config/scripts/tilewindows
 chmod +x ~/.config/scripts/tilewindows/tilewindows.js
 ```
 
-2) **Add an alias** (one-liner):
+2) **`npm link` or add an alias** (one-liner):
+
+This is set up with a `package.json` file so if you have `npm` you can run `npm link` to expose it globally on your machine:
 
 ```bash
+cd ~/.config/scripts/tilewindows
+npm link
+```
+
+Alternatively, if you don't have `npm` or just prefer to set it manually, you can set it as an alias in your shell config file (e.g. `~/.zshrc`):
+
+```bash
+# One liner to append it to your ~/.zshrc file
 echo 'alias tilewindows="~/.config/scripts/tilewindows/tilewindows.js"' >> ~/.zshrc && source ~/.zshrc
 ```
 
