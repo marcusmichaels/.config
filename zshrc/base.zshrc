@@ -10,14 +10,14 @@ function dpr() {
   local git_pr_url="https://github.com/$git_remote_path/pull/new/$git_branch_name"
 
   echo "Opening: $git_pr_url"
-  
+
   # Open PR url in browser
   open "$git_pr_url"
 }
 
 alias nodecontainer="docker run --rm -it --network none --cap-drop ALL -p 3000:3000 -v "$(pwd)":/app -w /app node:22 /bin/bash"
 
-alias tilewindows="~/.config/scripts/execs/window-manager.js"
+alias tilewindows="~/.config/scripts/tilewindows/tilewindows.js"
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
