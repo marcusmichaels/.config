@@ -1,38 +1,6 @@
 {
   "layouts": {
-    "test": [
-      {
-        "app": "Finder",
-        "index": 1,
-        "x": 660,
-        "y": 738,
-        "width": 920,
-        "height": 464
-      },
-      {
-        "app": "Finder",
-        "index": 2,
-        "x": 1428,
-        "y": 779,
-        "width": 920,
-        "height": 436
-      },
-      {
-        "app": "Finder",
-        "index": 3,
-        "x": 476,
-        "y": 817,
-        "width": 920,
-        "height": 623
-      },
-      {
-        "app": "Finder",
-        "index": 4,
-        "x": 718,
-        "y": 487,
-        "width": 920,
-        "height": 436
-      },
+    "home": [
       {
         "app": "Slack",
         "index": 1,
@@ -50,38 +18,6 @@
         "height": 708
       },
       {
-        "app": "Mail",
-        "index": 1,
-        "x": 1267,
-        "y": 251,
-        "width": 891,
-        "height": 844
-      },
-      {
-        "app": "TablePlus",
-        "index": 1,
-        "x": 1000,
-        "y": 354,
-        "width": 1440,
-        "height": 943
-      },
-      {
-        "app": "Docker Desktop",
-        "index": 1,
-        "x": 119,
-        "y": 104,
-        "width": 1270,
-        "height": 720
-      },
-      {
-        "app": "Postman",
-        "index": 1,
-        "x": 344,
-        "y": 109,
-        "width": 1440,
-        "height": 955
-      },
-      {
         "app": "Spotify",
         "index": 1,
         "x": -1080,
@@ -92,25 +28,17 @@
       {
         "app": "Arc",
         "index": 1,
-        "x": 1315,
-        "y": 186,
-        "width": 1882,
-        "height": 1055
-      },
-      {
-        "app": "Preview",
-        "index": 1,
-        "x": 4,
-        "y": 29,
-        "width": 708,
-        "height": 351
+        "x": 1766,
+        "y": 25,
+        "width": 1674,
+        "height": 1415
       },
       {
         "app": "zed",
         "index": 1,
-        "x": 0,
+        "x": 1,
         "y": 25,
-        "width": 2642,
+        "width": 1764,
         "height": 1415
       }
     ]
