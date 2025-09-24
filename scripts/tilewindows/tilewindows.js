@@ -21,10 +21,9 @@ const SCRIPT_DIR = path.dirname(SCRIPT_FILE);
 const COUPLED_CONFIG = path.join(SCRIPT_DIR, ".", "tilewindows.config.json");
 const LEGACY_DOT = path.join(os.homedir(), ".config", "tilewindows.config.json");
 
-
 function getConfigPath() {
   // 1) CLI flag
-  const flag = process.argv.find(a => a.startsWith("--config="));
+  const flag = process.argv.find((a) => a.startsWith("--config="));
   if (flag) return flag.split("=")[1];
 
   // 2) Env var
@@ -47,14 +46,13 @@ function getConfigPath() {
   }
 
   // 7) macOS Application Support
-  if (process.platform === "darwin")) {
+  if (process.platform === "darwin") {
     return path.join(os.homedir(), "Library", "Application Support", "tilewindows.config.json");
   }
 
   // 8) ~/.config fallback
   return LEGACY_DOT;
 }
-
 
 // Use the resolved path everywhere below
 const CONFIG_FILE = getConfigPath();
@@ -445,7 +443,6 @@ Config resolution (highest → lowest):
   → script-relative → $XDG_CONFIG_HOME → ~/Library/Application Support → ~/.config
 `);
 }
-
 
 // ---------- CLI parsing ----------
 const [, , cmdOrLayout, maybeArg] = process.argv;
