@@ -8,11 +8,37 @@
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
   "agent": {
+    "profiles": {
+      "write": {
+        "name": "Write",
+        "tools": {
+          "open": true,
+          "copy_path": true,
+          "create_directory": true,
+          "delete_path": true,
+          "diagnostics": true,
+          "edit_file": true,
+          "fetch": true,
+          "list_directory": true,
+          "project_notifications": true,
+          "move_path": true,
+          "now": true,
+          "find_path": true,
+          "read_file": true,
+          "grep": true,
+          "terminal": true,
+          "thinking": true,
+          "web_search": true
+        },
+        "enable_all_context_servers": true,
+        "context_servers": {}
+      }
+    },
     "dock": "right",
     "default_profile": "write",
     "default_model": {
       "provider": "ollama",
-      "model": "qwen3:1.7b"
+      "model": "qwen3:8b"
     }
   },
   "language_models": {
@@ -20,11 +46,11 @@
       "api_url": "http://localhost:11434",
       "available_models": [
         {
-          "name": "phi4-mini:latest",
-          "max_tokens": 16384,
+          "name": "qwen3:8b",
+          "max_tokens": 32768,
           "supports_tools": true,
-          "supports_thinking": false,
-          "supports_images": true
+          "supports_thinking": true,
+          "supports_images": false
         }
       ]
     }
@@ -51,7 +77,7 @@
   "buffer_font_size": 12,
   "theme": {
     "mode": "system",
-    "light": "SynthWave 84 Dark",
+    "light": "Catppuccin Latte",
     "dark": "One Dark"
   },
   "experimental.theme_overrides": {
