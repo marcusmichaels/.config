@@ -72,6 +72,7 @@
       "visual": "block"
     }
   },
+  "tab_size": 2,
   "relative_line_numbers": true,
   "ui_font_size": 13,
   "buffer_font_size": 12,
