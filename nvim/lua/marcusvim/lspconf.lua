@@ -1,8 +1,7 @@
 -- LSP configs: https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
-local lspconf = require 'lspconfig'
 
 -- eslint: npm i -g vscode-langservers-extracted
-lspconf.eslint.setup{
+vim.lsp.config.eslint = {
   on_attach = function(client, bufnr)
     vim.api.nvim_create_autocmd("BufWritePre", {
       buffer = bufnr,
@@ -11,5 +10,9 @@ lspconf.eslint.setup{
   end,
 }
 
--- tsserver: npm install -g typescript-language-server typescript
-lspconf.ts_ls.setup{}
+vim.lsp.enable("eslint")
+
+-- tsserver: npm i -g vscode-langservers-extracted
+vim.lsp.config.ts_ls = {}
+
+vim.lsp.enable("ts_ls")

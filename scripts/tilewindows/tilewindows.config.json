@@ -41,6 +41,56 @@
         "width": 1764,
         "height": 1415
       }
+    ],
+    "work": [
+      {
+        "app": "ghostty",
+        "index": 1,
+        "x": -1692,
+        "y": 1242,
+        "width": 1692,
+        "height": 888
+      },
+      {
+        "app": "Slack",
+        "index": 1,
+        "x": 1,
+        "y": 2131,
+        "width": 1692,
+        "height": 877
+      },
+      {
+        "app": "Mail",
+        "index": 1,
+        "x": -869,
+        "y": 2131,
+        "width": 869,
+        "height": 877
+      },
+      {
+        "app": "zed",
+        "index": 1,
+        "x": 1,
+        "y": 25,
+        "width": 1688,
+        "height": 2105
+      },
+      {
+        "app": "Spotify",
+        "index": 1,
+        "x": -1692,
+        "y": 2131,
+        "width": 822,
+        "height": 877
+      },
+      {
+        "app": "Arc",
+        "index": 1,
+        "x": -1692,
+        "y": 25,
+        "width": 1692,
+        "height": 1216
+      }
     ]
   }
 }

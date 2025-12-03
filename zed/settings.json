@@ -7,50 +7,25 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "tab_size": 2,
   "agent": {
-    "profiles": {
-      "write": {
-        "name": "Write",
-        "tools": {
-          "open": true,
-          "copy_path": true,
-          "create_directory": true,
-          "delete_path": true,
-          "diagnostics": true,
-          "edit_file": true,
-          "fetch": true,
-          "list_directory": true,
-          "project_notifications": true,
-          "move_path": true,
-          "now": true,
-          "find_path": true,
-          "read_file": true,
-          "grep": true,
-          "terminal": true,
-          "thinking": true,
-          "web_search": true
-        },
-        "enable_all_context_servers": true,
-        "context_servers": {}
-      }
-    },
-    "dock": "right",
-    "default_profile": "write",
     "default_model": {
       "provider": "ollama",
-      "model": "qwen3:8b"
-    }
+      "model": "qwen3:1.7b"
+    },
+    "model_parameters": []
   },
   "language_models": {
     "ollama": {
       "api_url": "http://localhost:11434",
       "available_models": [
         {
-          "name": "qwen3:8b",
+          "name": "qwen2.5-coder",
+          "display_name": "qwen 2.5 coder 32K",
           "max_tokens": 32768,
           "supports_tools": true,
           "supports_thinking": true,
-          "supports_images": false
+          "supports_images": true
         }
       ]
     }
@@ -72,14 +47,10 @@
       "visual": "block"
     }
   },
-  "relative_line_numbers": true,
+  "relative_line_numbers": "enabled",
   "ui_font_size": 13,
   "buffer_font_size": 12,
-  "theme": {
-    "mode": "system",
-    "light": "Catppuccin Latte",
-    "dark": "One Dark"
-  },
+  "theme": "SynthWave 84 Dark",
   "experimental.theme_overrides": {
     "search.match_background": "#ff00f090",
     "warning.background": "#FF00FF20",

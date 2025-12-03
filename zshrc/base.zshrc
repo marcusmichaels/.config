@@ -26,3 +26,27 @@ export NVM_DIR="$HOME/.nvm"
 
 export PATH="/Applications/CMake.app/Contents/bin":"$PATH"
 alias prunebranches="git branch | grep -vE '^\*|main|master' | xargs git branch -D"
+
+optimisejpg() {
+  local quality=65  # default quality
+
+  # Check if the first argument is a number (override quality)
+  if [[ "$1" =~ ^[0-9]+$ ]]; then
+    quality="$1"
+    shift  # remove the quality argument from the list
+  fi
+
+  # Make sure at least one file is provided
+  if [ $# -eq 0 ]; then
+    echo "Usage: optimise [quality] file1 file2 ..."
+    return 1
+  fi
+
+  for file in "$@"; do
+    # Get filename without extension
+    base="${file%.*}"
+    # Save optimised image as base-optimised.jpg
+    sips -s format jpeg -s formatOptions "$quality" "$file" --out "${base}-optimised.jpg"
+    echo "Optimised ($quality): $file -> ${base}-optimised.jpg"
+  done
+}
