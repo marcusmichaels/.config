@@ -16,7 +16,7 @@ require("lazy").setup({
   "folke/which-key.nvim",
   { "folke/neoconf.nvim", cmd = "Neoconf" },
   "folke/neodev.nvim",
-  { 'nvim-telescope/telescope.nvim', tag = '0.1.5', dependencies = { 'nvim-lua/plenary.nvim',  'sharkdp/fd', 'BurntSushi/ripgrep', }},
+  { 'nvim-telescope/telescope.nvim', tag = 'v0.2.0', dependencies = { 'nvim-lua/plenary.nvim' } },
   { 'nvim-treesitter/nvim-treesitter' },
   { 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' },
   { 'folke/tokyonight.nvim', lazy = false, priority = 1000, opts = {}},
@@ -25,41 +25,42 @@ require("lazy").setup({
 
 require("telescope").setup({
   defaults = {
-    --prompt_prefix = " ",
-    --selection_caret = " ",
-    path_display = {"smart"},
-    dynamic_preview_title = true,
-    --winblend = 10,
+    path_display = { "smart" },
     sorting_strategy = "ascending",
-    --layout_strategy = "vertical",
-    layout_config = {
-      prompt_position = "bottom",
-      height = 0.95,
-    },
+    layout_config = { prompt_position = "bottom", height = 0.95 },
     vimgrep_arguments = {
-      'rg',
-      '--color=never',
-      '--no-heading',
-      '--with-filename',
-      '--line-number',
-      '--column',
-      '--smart-case',
-      '-u'
+       "rg",
+      "--color=never",
+      "--no-heading",
+      "--with-filename",
+      "--line-number",
+      "--column",
+      "--smart-case",
+      "-u",
     },
   },
   pickers = {
     live_grep = {
-      file_ignore_patterns = { 'node_modules', '.git', '.venv' },
+      file_ignore_patterns = { "node_modules", ".venv", ".git" },
       additional_args = function(_)
-        return { "--hidden" }
-      end
+        return { "--hidden" }  -- include hidden files
+      end,
     },
     find_files = {
-      file_ignore_patterns = { 'node_modules', '.git', '.venv' },
-      hidden = true
-    }
+      hidden = true,
+      find_command = {
+        "find",
+        ".",               -- start from current directory
+        "-type", "f",      -- only files
+        "-not", "-path", "*/.git/*",
+        "-not", "-path", "*/node_modules/*",
+        "-not", "-path", "*/.venv/*",
+      },
+    },
   },
 })
+
+-- require("telescope").load_extension("fzf")
 
 require('gitsigns').setup({
   signs = {
