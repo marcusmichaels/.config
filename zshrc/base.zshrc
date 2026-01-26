@@ -26,6 +26,7 @@ export NVM_DIR="$HOME/.nvm"
 
 export PATH="/Applications/CMake.app/Contents/bin":"$PATH"
 alias prunebranches="git branch | grep -vE '^\*|main|master' | xargs git branch -D"
+alias latestbranches="git for-each-ref --sort='committerdate:iso8601' --format='%(refname:short)' refs/heads"
 
 optimisejpg() {
   local quality=65  # default quality

@@ -7,13 +7,15 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "format_on_save": "on",
   "tab_size": 2,
   "agent": {
+    "always_allow_tool_actions": false,
     "default_model": {
-      "provider": "ollama",
-      "model": "qwen3:1.7b"
+      "provider": "copilot_chat",
+      "model": "claude-sonnet-4.5",
     },
-    "model_parameters": []
+    "model_parameters": [],
   },
   "language_models": {
     "ollama": {
@@ -25,42 +27,42 @@
           "max_tokens": 32768,
           "supports_tools": true,
           "supports_thinking": true,
-          "supports_images": true
-        }
-      ]
-    }
+          "supports_images": true,
+        },
+      ],
+    },
   },
   "preferred_line_length": 140,
   "soft_wrap": "bounded",
   "features": {
-    "edit_prediction_provider": "none"
+    "edit_prediction_provider": "none",
   },
   "telemetry": {
     "diagnostics": false,
-    "metrics": false
+    "metrics": false,
   },
   "vim_mode": true,
   "vim": {
     "cursor_shape": {
       "normal": "hollow",
       "replace": "underline",
-      "visual": "block"
-    }
+      "visual": "block",
+    },
   },
   "relative_line_numbers": "enabled",
   "ui_font_size": 13,
   "buffer_font_size": 12,
-  "theme": "SynthWave 84 Dark",
-  "experimental.theme_overrides": {
-    "search.match_background": "#ff00f090",
-    "warning.background": "#FF00FF20",
-    // "hint.background": "#FF00FF20",
-    // "error.background": "#FF00FF20",
-    // "info.background": "#FF00FF20",
-    "players": [
-      {
-        "selection": "#FF00FF20"
-      }
-    ]
-  }
+  "theme": "Ffern Dark",
+  // "experimental.theme_overrides": {
+  //   "search.match_background": "#ff00f090",
+  //   "warning.background": "#FF00FF20",
+  //   // "hint.background": "#FF00FF20",
+  //   // "error.background": "#FF00FF20",
+  //   // "info.background": "#FF00FF20",
+  //   "players": [
+  //     {
+  //       "selection": "#FF00FF20",
+  //     },
+  //   ],
+  // },
 }
