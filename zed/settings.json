@@ -52,7 +52,7 @@
   "relative_line_numbers": "enabled",
   "ui_font_size": 13,
   "buffer_font_size": 12,
-  "theme": "Ffern Dark",
+  "theme": "Ffern Light",
   // "experimental.theme_overrides": {
   //   "search.match_background": "#ff00f090",
   //   "warning.background": "#FF00FF20",
