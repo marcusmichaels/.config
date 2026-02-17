@@ -1,68 +1,73 @@
-// Zed settings
-//
-// For information on how to configure Zed, see the Zed
-// documentation: https://zed.dev/docs/configuring-zed
-//
-// To see all of Zed's default settings without changing your
-// custom settings, run `zed: open default settings` from the
-// command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "edit_predictions": {
+    "provider": "none",
+  },
+  "disable_ai": false,
   "format_on_save": "on",
   "tab_size": 2,
   "agent": {
-    "always_allow_tool_actions": false,
-    "default_model": {
-      "provider": "copilot_chat",
-      "model": "claude-sonnet-4.5",
-    },
+    "expand_terminal_card": true,
+    "default_model": { "provider": "copilot_chat", "model": "claude-opus-4.5" },
     "model_parameters": [],
   },
   "language_models": {
-    "ollama": {
-      "api_url": "http://localhost:11434",
-      "available_models": [
-        {
-          "name": "qwen2.5-coder",
-          "display_name": "qwen 2.5 coder 32K",
-          "max_tokens": 32768,
-          "supports_tools": true,
-          "supports_thinking": true,
-          "supports_images": true,
-        },
-      ],
+    "openai_compatible": {
+      "Luna": {
+        "api_url": "http://localhost:8080/v1",
+        "available_models": [
+          {
+            "name": "qwen3:4b",
+            "max_tokens": 40960,
+            "max_output_tokens": 40960,
+            "max_completion_tokens": 40960,
+            "capabilities": {
+              "tools": true,
+              "images": false,
+              "parallel_tool_calls": false,
+              "prompt_cache_key": false,
+              "chat_completions": true,
+            },
+          },
+        ],
+      },
+      "lmstudio": {
+        "api_url": "http://localhost:1337/v1",
+        "available_models": [
+          {
+            "name": "qwen/qwen3-8b",
+            "display_name": "LMStudio qwen3-8b",
+            "max_tokens": 40960,
+            "capabilities": { "tools": true, "parallel_tool_calls": false, "images": false, "prompt_cache_key": false },
+          },
+          {
+            "name": "mistralai/devstral-small-2-2512",
+            "display_name": "LMStudio devstral-24b",
+            "max_tokens": 393216,
+            "capabilities": { "tools": true, "parallel_tool_calls": false, "images": false, "prompt_cache_key": false },
+          },
+        ],
+      },
     },
   },
   "preferred_line_length": 140,
   "soft_wrap": "bounded",
-  "features": {
-    "edit_prediction_provider": "none",
-  },
-  "telemetry": {
-    "diagnostics": false,
-    "metrics": false,
-  },
+  "telemetry": { "diagnostics": false, "metrics": false },
   "vim_mode": true,
-  "vim": {
-    "cursor_shape": {
-      "normal": "hollow",
-      "replace": "underline",
-      "visual": "block",
-    },
-  },
+  "vim": { "cursor_shape": { "normal": "hollow", "replace": "underline", "visual": "block" } },
   "relative_line_numbers": "enabled",
   "ui_font_size": 13,
   "buffer_font_size": 12,
-  "theme": "Ffern Light",
-  // "experimental.theme_overrides": {
-  //   "search.match_background": "#ff00f090",
-  //   "warning.background": "#FF00FF20",
-  //   // "hint.background": "#FF00FF20",
-  //   // "error.background": "#FF00FF20",
-  //   // "info.background": "#FF00FF20",
-  //   "players": [
-  //     {
-  //       "selection": "#FF00FF20",
-  //     },
-  //   ],
-  // },
+  "theme": "SynthWave 84 Dark",
+  "context_servers": {
+    "MCP_DOCKER": {
+      "enabled": false,
+      "command": "docker",
+      "args": ["mcp", "gateway", "run"],
+    },
+  },
+  "context_server_timeout": 600,
+  "experimental.theme_overrides": {
+    "search.match_background": "#ff00f090",
+    "warning.background": "#FF00FF20",
+  },
 }
