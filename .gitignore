@@ -7,7 +7,7 @@
 
 !/nvim
 !/ghostty
-!/scripts
+!/toolbox
 !/zshrc
 
 # We only want one file from zed's config
