@@ -1,15 +1,20 @@
 {
   "name": "tilewindows",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Marcus Michaels",
   "description": "A tiny no-dependency CLI window manager for macOS",
   "bin": {
     "tilewindows": "tilewindows.js"
   },
+  "scripts": {
+    "postinstall": "sh scripts/postinstall.sh",
+    "preuninstall": "sh scripts/preuninstall.sh"
+  },
   "type": "module",
   "private": false,
   "files": [
     "tilewindows.js",
+    "scripts/",
     "README.md"
   ]
 }

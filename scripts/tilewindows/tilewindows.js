@@ -2,47 +2,59 @@
 
 /**
  * tilewindows — arrange/save macOS window layouts via AppleScript
- * No deps. Stores layouts at ~/.config/tilewindows/tilewindows.config.json
+ * No dependencies. Stores layouts in a human-editable JSON config file.
+ *
+ * Usage:
+ *   tilewindows <layout>         Apply a saved layout
+ *   tilewindows save <layout>    Capture current windows
+ *   tilewindows help             Show all commands
  */
 
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
 import os from "os";
 
+// ─── Config resolution ───────────────────────────────────────────────
+
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_FILE = path.join(process.cwd(), "tilewindows.config.json");
 const FORCE_HERE = process.argv.includes("--here");
 
-const SCRIPT_FILE = fileURLToPath(import.meta.url);
-const SCRIPT_DIR = path.dirname(SCRIPT_FILE);
-
-// Prefer explicit → coupled → XDG → mac → ~/.config
-const COUPLED_CONFIG = path.join(SCRIPT_DIR, ".", "tilewindows.config.json");
-const LEGACY_DOT = path.join(os.homedir(), ".config", "tilewindows.config.json");
-
-function getConfigPath() {
-  // 1) CLI flag
+/**
+ * Resolve the config file path. Highest priority wins:
+ *
+ *   1. --config=/path/to/file
+ *   2. $TILEWINDOWS_CONFIG env var
+ *   3. --here  → CWD/tilewindows.config.json (force)
+ *   4. CWD/tilewindows.config.json (if it already exists)
+ *   5. Script-relative tilewindows.config.json (if it already exists)
+ *   6. $XDG_CONFIG_HOME/tilewindows/tilewindows.config.json
+ *   7. ~/Library/Application Support/tilewindows.config.json (macOS)
+ *   8. ~/.config/tilewindows/tilewindows.config.json
+ */
+function resolveConfigPath() {
+  // 1) Explicit flag
   const flag = process.argv.find((a) => a.startsWith("--config="));
-  if (flag) return flag.split("=")[1];
+  if (flag) return flag.split("=").slice(1).join("=");
 
   // 2) Env var
   if (process.env.TILEWINDOWS_CONFIG) return process.env.TILEWINDOWS_CONFIG;
 
-  // 3) Project file (forced via --here)
+  // 3) Forced CWD
   if (FORCE_HERE) return PROJECT_FILE;
 
-  // 4) Auto-project (if file exists in CWD)
-  try {
-    if (fs.existsSync(PROJECT_FILE)) return PROJECT_FILE;
-  } catch {}
+  // 4) CWD file (auto-detected)
+  if (fileExists(PROJECT_FILE)) return PROJECT_FILE;
 
-  // 5) Script-relative (coupled)
-  if (COUPLED_CONFIG) return COUPLED_CONFIG;
+  // 5) Script-relative (coupled install)
+  const coupled = path.join(SCRIPT_DIR, "tilewindows.config.json");
+  if (fileExists(coupled)) return coupled;
 
   // 6) XDG
   if (process.env.XDG_CONFIG_HOME) {
-    return path.join(process.env.XDG_CONFIG_HOME, "tilewindows.config.json");
+    return path.join(process.env.XDG_CONFIG_HOME, "tilewindows", "tilewindows.config.json");
   }
 
   // 7) macOS Application Support
@@ -51,25 +63,33 @@ function getConfigPath() {
   }
 
   // 8) ~/.config fallback
-  return LEGACY_DOT;
+  return path.join(os.homedir(), ".config", "tilewindows", "tilewindows.config.json");
 }
 
-// Use the resolved path everywhere below
-const CONFIG_FILE = getConfigPath();
-const CONFIG_DIR = path.dirname(CONFIG_FILE);
+const CONFIG_FILE = resolveConfigPath();
+
+// ─── Config I/O ──────────────────────────────────────────────────────
+
+function fileExists(p) {
+  try {
+    return fs.existsSync(p);
+  } catch {
+    return false;
+  }
+}
 
 function ensureConfig() {
-  if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  const dir = path.dirname(CONFIG_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(CONFIG_FILE)) {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ layouts: {} }, null, 2));
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ layouts: {} }, null, 2) + "\n");
   }
 }
 
 function loadConfig() {
   ensureConfig();
   try {
-    const raw = fs.readFileSync(CONFIG_FILE, "utf-8");
-    const data = JSON.parse(raw || "{}");
+    const data = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8") || "{}");
     if (!data.layouts || typeof data.layouts !== "object") data.layouts = {};
     return data;
   } catch {
@@ -82,253 +102,223 @@ function saveConfig(cfg) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2) + "\n");
 }
 
-// ---------- AppleScript helpers ----------
+// ─── AppleScript helpers ─────────────────────────────────────────────
+
+/** Escape a value for use inside an AppleScript double-quoted string. */
 function escapeAS(str) {
-  // escape double-quotes for AppleScript string literals
-  return String(str).replace(/"/g, '\\"');
+  return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-// targets: [{ index?, x, y, width, height }, ...]
-async function applyWindowsForApp(app, targets, delaySeconds = 0.15) {
+/**
+ * Run an AppleScript via `osascript` using stdin (avoids all shell-quoting issues).
+ * Returns the trimmed stdout. Rejects on error or timeout.
+ */
+function runOSA(script, timeoutMs = 15_000) {
+  return new Promise((resolve, reject) => {
+    const opts = {};
+    if (timeoutMs > 0) opts.timeout = timeoutMs;
+
+    // Pass script on stdin (`-` flag) so we never need to shell-escape it.
+    const child = execFile("osascript", ["-"], opts, (err, stdout, stderr) => {
+      if (err) {
+        if (err.killed) return reject(new Error("osascript timed out"));
+        return reject(new Error(stderr?.trim() || String(err)));
+      }
+      if (stderr?.trim()) return reject(new Error(stderr.trim()));
+      resolve((stdout || "").trim());
+    });
+
+    child.stdin.end(script);
+  });
+}
+
+// ─── Window operations ───────────────────────────────────────────────
+
+/**
+ * Capture every visible window across all foreground apps.
+ * Returns an array of { app, index, x, y, width, height }.
+ *
+ * Uses a tab-delimited format from AppleScript to avoid JSON-escaping bugs
+ * (app names with quotes/backslashes would break in-AS JSON construction).
+ */
+async function getAllWindows() {
+  const script = `
+tell application "System Events"
+  set output to ""
+  repeat with proc in (every process whose background only is false)
+    set appName to name of proc
+    try
+      set winCount to count of windows of proc
+      repeat with i from 1 to winCount
+        try
+          set win to window i of proc
+          set {xPos, yPos} to position of win
+          set {w, h} to size of win
+          set output to output & appName & tab & i & tab & xPos & tab & yPos & tab & w & tab & h & linefeed
+        end try
+      end repeat
+    end try
+  end repeat
+  return output
+end tell`;
+
+  const raw = await runOSA(script, 30_000);
+  if (!raw) return [];
+
+  return raw
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const [app, index, x, y, width, height] = line.split("\t");
+      return {
+        app,
+        index: parseInt(index, 10),
+        x: parseInt(x, 10),
+        y: parseInt(y, 10),
+        width: parseInt(width, 10),
+        height: parseInt(height, 10),
+      };
+    })
+    .filter((w) => w.app && !Number.isNaN(w.x));
+}
+
+/**
+ * Activate an app and position one or more of its windows.
+ *
+ * Instead of generating N separate code blocks per target, we pass the data
+ * as parallel AppleScript lists and loop over them in two passes:
+ *   Pass 1 — match targets that have an index hint to that specific window.
+ *   Pass 2 — assign remaining targets to the first unused standard window.
+ */
+async function applyWindowsForApp(app, targets) {
   if (!targets?.length) return;
 
-  const assignments = targets.map((t, idx) => ({
-    n: idx + 1,
-    idx: Number.isInteger(t.index) ? t.index : null,
-    x: t.x,
-    y: t.y,
-    w: t.width,
-    h: t.height,
-  }));
+  // Build parallel lists for AppleScript
+  const xs = [],
+    ys = [],
+    ws = [],
+    hs = [],
+    idxHints = [];
 
-  const declRects = assignments.map((a) => `set rect_${a.n} to {${a.x}, ${a.y}, ${a.w}, ${a.h}}`).join("\n");
+  for (const t of targets) {
+    xs.push(t.x);
+    ys.push(t.y);
+    ws.push(t.width);
+    hs.push(t.height);
+    idxHints.push(Number.isInteger(t.index) ? t.index : -1);
+  }
 
-  const assignBlocks = assignments
-    .map((a) => {
-      const idxMatchLine = a.idx ? `set match_idx to (i is ${a.idx})` : `set match_idx to false`;
-      return `
-      -- Assignment ${a.n}
-      set assigned_${a.n} to false
+  const asList = (arr) => `{${arr.join(", ")}}`;
 
-      -- Primary pass: match by index (if provided), each window used at most once
-      repeat with i from 1 to count of wins
-        if (item i of used_flags) is false then
-          set win to item i of wins
+  const script = `
+tell application "${escapeAS(app)}" to activate
 
-          -- filter: only standard windows (avoids sheets/panels)
-          set is_standard to true
+tell application "System Events"
+  try
+    tell process "${escapeAS(app)}"
+      -- Wait for at least one window to appear (up to 20 seconds).
+      -- For already-running apps this exits immediately; for cold launches
+      -- it polls every 0.5s until the app has created a window.
+      repeat 40 times
+        if (count of windows) > 0 then exit repeat
+        delay 0.5
+      end repeat
+
+      set wins to every window
+      set winCount to count of wins
+      if winCount is 0 then return
+
+      -- Data: parallel lists describing each target rect
+      set tXs to ${asList(xs)}
+      set tYs to ${asList(ys)}
+      set tWs to ${asList(ws)}
+      set tHs to ${asList(hs)}
+      set tIdx to ${asList(idxHints)}
+      set tCount to count of tXs
+
+      -- Bookkeeping: track which windows and targets are spoken for
+      set usedWin to {}
+      repeat winCount times
+        set end of usedWin to false
+      end repeat
+      set assigned to {}
+      repeat tCount times
+        set end of assigned to false
+      end repeat
+
+      -- Helper: check if window i is a standard window
+      -- (We'll inline this since AS doesn't have first-class functions)
+
+      -- Pass 1: match by index hint
+      repeat with t from 1 to tCount
+        set idx to item t of tIdx
+        if idx > 0 and idx ≤ winCount and (item idx of usedWin) is false then
+          set win to item idx of wins
+          set isStd to true
           try
-            set subroleStr to value of attribute "AXSubrole" of win
-            if subroleStr is not "AXStandardWindow" then set is_standard to false
+            if value of attribute "AXSubrole" of win is not "AXStandardWindow" then set isStd to false
           end try
-
-          if is_standard then
-            ${idxMatchLine}
-            if match_idx then
-              -- unminimize if needed
-              try
-                set value of attribute "AXMinimized" of win to false
-              end try
-              set item i of used_flags to true
-              set position of win to {item 1 of rect_${a.n}, item 2 of rect_${a.n}}
-              set size of win to {item 3 of rect_${a.n}, item 4 of rect_${a.n}}
-              set assigned_${a.n} to true
-              exit repeat
-            end if
+          if isStd then
+            try
+              set value of attribute "AXMinimized" of win to false
+            end try
+            set position of win to {item t of tXs, item t of tYs}
+            set size of win to {item t of tWs, item t of tHs}
+            set item idx of usedWin to true
+            set item t of assigned to true
           end if
         end if
       end repeat
 
-      -- Fallback: first unused standard window
-      if assigned_${a.n} is false then
-        repeat with i from 1 to count of wins
-          if (item i of used_flags) is false then
-            set win to item i of wins
-            set is_standard to true
-            try
-              set subroleStr to value of attribute "AXSubrole" of win
-              if subroleStr is not "AXStandardWindow" then set is_standard to false
-            end try
-
-            if is_standard then
+      -- Pass 2: assign unmatched targets to next unused standard window
+      repeat with t from 1 to tCount
+        if (item t of assigned) is false then
+          repeat with i from 1 to winCount
+            if (item i of usedWin) is false then
+              set win to item i of wins
+              set isStd to true
               try
-                set value of attribute "AXMinimized" of win to false
+                if value of attribute "AXSubrole" of win is not "AXStandardWindow" then set isStd to false
               end try
-              set item i of used_flags to true
-              set position of win to {item 1 of rect_${a.n}, item 2 of rect_${a.n}}
-              set size of win to {item 3 of rect_${a.n}, item 4 of rect_${a.n}}
-              exit repeat
+              if isStd then
+                try
+                  set value of attribute "AXMinimized" of win to false
+                end try
+                set position of win to {item t of tXs, item t of tYs}
+                set size of win to {item t of tWs, item t of tHs}
+                set item i of usedWin to true
+                exit repeat
+              end if
             end if
-          end if
-        end repeat
-      end if
-    `;
-    })
-    .join("\n");
-
-  const s = `
-    tell application "${escapeAS(app)}" to activate
-    delay ${Number(delaySeconds).toFixed(2)}
-    tell application "System Events"
-      try
-        tell process "${escapeAS(app)}"
-          set wins to every window
-          if (count of wins) is 0 then return
-
-          -- one boolean per window to avoid reusing
-          set used_flags to {}
-          repeat with i from 1 to count of wins
-            set end of used_flags to false
           end repeat
-
-${declRects}
-
-${assignBlocks}
-
-        end tell
-      end try
-    end tell
-  `;
-
-  try {
-    await runOSA(s);
-    console.log(`✓ Applied ${targets.length} rect(s) to ${app}`);
-  } catch (e) {
-    console.error(`✗ ${app}: ${e.message}`);
-  }
-}
-
-async function runOSA(script) {
-  return new Promise((resolve, reject) => {
-    // Use double quotes inside AS, single quotes around -e payload
-    exec(`osascript -e '${script}'`, (err, stdout, stderr) => {
-      if (err) return reject(new Error(stderr?.trim() || String(err)));
-      if (stderr && stderr.trim()) return reject(new Error(stderr.trim()));
-      resolve((stdout || "").trim());
-    });
-  });
-}
-
-async function setWindowPosition(app, x, y, width, height, delaySeconds = 0.2) {
-  const s = `
-    tell application "${escapeAS(app)}"
-      activate
-    end tell
-    delay ${Number(delaySeconds).toFixed(2)}
-    tell application "System Events"
-      try
-        tell process "${escapeAS(app)}"
-          set win to front window
-          set position of win to {${x}, ${y}}
-          set size of win to {${width}, ${height}}
-        end tell
-      end try
-    end tell
-  `;
-  try {
-    await runOSA(s);
-    console.log(`✓ ${app} → (${x},${y}) ${width}x${height}`);
-  } catch (e) {
-    console.error(`✗ ${app}: ${e.message}`);
-  }
-}
-
-// async function getAllWindows() {
-//   const s = `
-//     tell application "System Events"
-//       set windowInfo to ""
-//       set appProcesses to (every process whose background only is false)
-//       repeat with appProc in appProcesses
-//         set appName to name of appProc
-//         try
-//           repeat with win in (every window of appProc)
-//             set winPos to position of win
-//             set winSize to size of win
-//             set xPos to item 1 of winPos
-//             set yPos to item 2 of winPos
-//             set w to item 1 of winSize
-//             set h to item 2 of winSize
-//             set windowInfo to windowInfo & "{\\"app\\":\\"" & appName & "\\",\\"x\\":" & xPos & ",\\"y\\":" & yPos & ",\\"width\\":" & w & ",\\"height\\":" & h & "},"
-//           end repeat
-//         end try
-//       end repeat
-//     end tell
-//     if windowInfo ends with "," then set windowInfo to text 1 thru -2 of windowInfo
-//     return "[" & windowInfo & "]"
-//   `;
-//   const raw = await runOSA(s);
-//   try {
-//     return JSON.parse(raw || "[]");
-//   } catch {
-//     // fallback: try to repair minimal issues
-//     return [];
-//   }
-// }
-
-async function getAllWindows() {
-  const s = `
-    tell application "System Events"
-      set windowInfo to ""
-      set appProcesses to (every process whose background only is false)
-      repeat with appProc in appProcesses
-        set appName to name of appProc
-        try
-          set wCount to count of windows of appProc
-          repeat with i from 1 to wCount
-            set win to window i of appProc
-            try
-              set winPos to position of win
-              set winSize to size of win
-              set xPos to item 1 of winPos
-              set yPos to item 2 of winPos
-              set w to item 1 of winSize
-              set h to item 2 of winSize
-              set windowInfo to windowInfo & "{\\"app\\":\\"" & appName & "\\",\\"index\\":" & i & ",\\"x\\":" & xPos & ",\\"y\\":" & yPos & ",\\"width\\":" & w & ",\\"height\\":" & h & "},"
-            end try
-          end repeat
-        end try
+        end if
       end repeat
+
     end tell
-    if windowInfo ends with "," then set windowInfo to text 1 thru -2 of windowInfo
-    return "[" & windowInfo & "]"
-  `;
-  const raw = await runOSA(s);
+  end try
+end tell`;
+
   try {
-    return JSON.parse(raw || "[]");
-  } catch {
-    return [];
+    await runOSA(script, 30_000);
+    console.log(`  ✓ ${app} — ${targets.length} window(s)`);
+  } catch (e) {
+    console.error(`  ✗ ${app} — ${e.message}`);
   }
 }
 
-// ---------- Actions ----------
-// async function applyLayout(name) {
-//   const cfg = loadConfig();
-//   const layout = cfg.layouts?.[name];
-//   if (!layout || !Array.isArray(layout) || layout.length === 0) {
-//     console.error(`No layout found: ${name}`);
-//     process.exitCode = 1;
-//     return;
-//   }
-//   console.log(`Arranging windows for "${name}"…`);
-//   for (const item of layout) {
-//     const { app, x, y, width, height } = item;
-//     if (!app) continue;
-//     await setWindowPosition(app, x, y, width, height, 0.2);
-//   }
-//   console.log(`Done.`);
-// }
+// ─── Commands ────────────────────────────────────────────────────────
 
-async function applyLayout(name) {
-  const cfg = loadConfig();
-  const layout = cfg.layouts?.[name];
+async function cmdApply(name) {
+  const layout = loadConfig().layouts?.[name];
   if (!layout?.length) {
-    console.error(`No layout found: ${name}`);
+    console.error(`No layout found: "${name}"`);
     process.exitCode = 1;
     return;
   }
-  console.log(`Arranging windows for "${name}"…`);
 
-  // Group targets by app
+  console.log(`Applying layout "${name}"…`);
+
+  // Group targets by app (preserving order of first appearance)
   const byApp = new Map();
   for (const item of layout) {
     if (!item?.app) continue;
@@ -336,24 +326,17 @@ async function applyLayout(name) {
     byApp.get(item.app).push(item);
   }
 
-  // For stable behavior, keep the saved order
-  for (const [app, targets] of byApp.entries()) {
-    await applyWindowsForApp(app, targets, 0.15);
+  // Launch and position all apps in parallel so a slow-launching app
+  // can't block the rest from being tiled.
+  const apps = [...byApp.keys()];
+  const results = await Promise.allSettled(apps.map((app) => applyWindowsForApp(app, byApp.get(app))));
+
+  const failed = apps.filter((_, i) => results[i].status === "rejected");
+  if (failed.length) {
+    console.log(`  ⚠ Failed/timed out: ${failed.join(", ")}`);
   }
 
-  console.log(`Done.`);
-}
-
-function cmdInit() {
-  const target = PROJECT_FILE; // always in CWD
-  const dir = path.dirname(target);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(target)) {
-    fs.writeFileSync(target, JSON.stringify({ layouts: {} }, null, 2) + "\n");
-    console.log(`Created ${target}`);
-  } else {
-    console.log(`Already exists: ${target}`);
-  }
+  console.log("Done.");
 }
 
 async function cmdGet() {
@@ -371,23 +354,22 @@ async function cmdSave(name) {
   const cfg = loadConfig();
   cfg.layouts[name] = windows;
   saveConfig(cfg);
-  console.log(`Saved ${windows.length} windows to layout "${name}".`);
+  console.log(`Saved ${windows.length} window(s) to layout "${name}".`);
 }
 
 function cmdList() {
-  const cfg = loadConfig();
-  const names = Object.keys(cfg.layouts || {});
+  const names = Object.keys(loadConfig().layouts || {});
   if (names.length === 0) {
     console.log("(no layouts saved yet)");
   } else {
-    for (const n of names) console.log(n);
+    names.forEach((n) => console.log(n));
   }
 }
 
 function cmdRm(name) {
   const cfg = loadConfig();
   if (!cfg.layouts?.[name]) {
-    console.error(`No layout found: ${name}`);
+    console.error(`No layout found: "${name}"`);
     process.exitCode = 1;
     return;
   }
@@ -397,14 +379,24 @@ function cmdRm(name) {
 }
 
 function cmdPrint(name) {
-  const cfg = loadConfig();
-  const layout = cfg.layouts?.[name];
+  const layout = loadConfig().layouts?.[name];
   if (!layout) {
-    console.error(`No layout found: ${name}`);
+    console.error(`No layout found: "${name}"`);
     process.exitCode = 1;
     return;
   }
   console.log(JSON.stringify(layout, null, 2));
+}
+
+function cmdInit() {
+  if (fs.existsSync(PROJECT_FILE)) {
+    console.log(`Already exists: ${PROJECT_FILE}`);
+  } else {
+    const dir = path.dirname(PROJECT_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(PROJECT_FILE, JSON.stringify({ layouts: {} }, null, 2) + "\n");
+    console.log(`Created ${PROJECT_FILE}`);
+  }
 }
 
 function cmdPath() {
@@ -412,10 +404,39 @@ function cmdPath() {
   console.log(CONFIG_FILE);
 }
 
+function cmdCompletions() {
+  const script = [
+    "# tilewindows zsh completions",
+    '# Add to ~/.zshrc:  eval "$(tilewindows completions)"',
+    "",
+    "_tilewindows() {",
+    "  local -a commands layouts",
+    "  commands=(init apply get save list rm print path help)",
+    "",
+    "  if (( CURRENT == 2 )); then",
+    '    layouts=("${(@f)$(tilewindows list 2>/dev/null)}")',
+    "    _alternative \\",
+    "      'commands:command:(${commands[@]})' \\",
+    "      'layouts:layout:(${layouts[@]})'",
+    "  elif (( CURRENT == 3 )); then",
+    "    case ${words[2]} in",
+    "      apply|print|rm)",
+    '        layouts=("${(@f)$(tilewindows list 2>/dev/null)}")',
+    "        _alternative 'layouts:layout:(${layouts[@]})'",
+    "        ;;",
+    "    esac",
+    "  fi",
+    "}",
+    "",
+    "compdef _tilewindows tilewindows",
+  ].join("\n");
+  console.log(script);
+}
+
 function cmdHelp() {
   console.log(`
 Usage:
-  tilewindows <layout>         Apply a layout (alias of "apply <layout>")
+  tilewindows <layout>         Apply a layout (shorthand for "apply")
   tilewindows apply <layout>   Apply a saved layout
   tilewindows save <layout>    Save current windows to a named layout
   tilewindows get              Print current windows as JSON
@@ -423,75 +444,58 @@ Usage:
   tilewindows print <layout>   Show JSON for a saved layout
   tilewindows rm <layout>      Remove a saved layout
   tilewindows path             Show config file location
-  tilewindows init             Create an empty .tilewindows.json in the current directory
+  tilewindows init             Create tilewindows.config.json in the current directory
+  tilewindows completions      Print zsh completions script
   tilewindows help             Show this help message
 
-Project configs:
-  If tilewindows.config.json exists in the current directory, it's used automatically.
-  Use --here to force using CWD/tilewindows.config.json (creating on first save).
+Flags:
+  --config=<path>   Use a specific config file
+  --here            Force using CWD/tilewindows.config.json
 
 Environment:
-  TILEWINDOWS_CONFIG=/path/to/tilewindows.config.json   Use a specific config file
-  XDG_CONFIG_HOME=~/.config                             Standard XDG base dir (if set)
-
-Flags:
-  --config=/path/to/tilewindows.config.json             Explicit config location
-  --here                                                Use CWD/tilewindows.config.json
+  TILEWINDOWS_CONFIG   Path to config file (overrides auto-detection)
+  XDG_CONFIG_HOME      XDG base directory (used in fallback chain)
 
 Config resolution (highest → lowest):
-  --config → TILEWINDOWS_CONFIG → (--here or CWD/tilewindows.config.json if exists)
-  → script-relative → $XDG_CONFIG_HOME → ~/Library/Application Support → ~/.config
+  --config flag → $TILEWINDOWS_CONFIG → --here → CWD (if exists)
+  → script-relative (if exists) → XDG → ~/Library/Application Support → ~/.config
 `);
 }
 
-// ---------- CLI parsing ----------
-const [, , cmdOrLayout, maybeArg] = process.argv;
+// ─── CLI entry point ─────────────────────────────────────────────────
 
-// Back-compat: `tilewindows work` should apply layout "work"
-const command = (() => {
-  switch (cmdOrLayout) {
-    case "init":
-    case "apply":
-    case "get":
-    case "save":
-    case "list":
-    case "rm":
-    case "print":
-    case "path":
-    case "help":
-      return cmdOrLayout;
-    case undefined:
-      return "help";
-    default:
-      return "apply";
-  }
-})();
+const COMMANDS = new Set(["init", "apply", "get", "save", "list", "rm", "print", "path", "completions", "help"]);
+const [, , rawCmd, rawArg] = process.argv;
+
+const command = COMMANDS.has(rawCmd) ? rawCmd : rawCmd === undefined ? "help" : "apply";
+const arg = command === "apply" && rawCmd !== "apply" ? rawCmd : rawArg;
 
 (async () => {
   try {
     switch (command) {
-      case "init":
-        cmdInit();
-        break;
-      case "apply": {
-        const name = cmdOrLayout === "apply" ? maybeArg || "home" : cmdOrLayout || "home";
-        await applyLayout(name);
-        break;
-      }
-      case "get":
-        await cmdGet();
+      case "apply":
+        await cmdApply(arg || "home");
         break;
       case "save":
-        await cmdSave(maybeArg);
+        await cmdSave(rawArg);
+        break;
+      case "get":
+        await cmdGet();
         break;
       case "list":
         cmdList();
         break;
       case "rm":
-        cmdRm(maybeArg);
+        cmdRm(rawArg);
         break;
       case "print":
-        cmdPrint(maybeArg);
+        cmdPrint(rawArg);
+        break;
+      case "init":
+        cmdInit();
+        break;
+      case "completions":
+        cmdCompletions();
         break;
       case "path":
         cmdPath();
