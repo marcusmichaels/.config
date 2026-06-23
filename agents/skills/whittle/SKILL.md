@@ -83,6 +83,21 @@ Follow in order. Stop (silently, releasing the lock) at any "no clean instance".
 
 ## Local verification
 
+Run on my machine before opening the PR. Never open a red PR.
+
+1. **Format** the changed files: `turbo run format` (Biome).
+2. **Determine the changed package** — the workspace whose dir contains the edited
+   file (read its nearest `package.json` `name`). Call it `<pkg>`.
+3. **Typecheck** that package only:
+   `turbo run check-types --filter=<pkg>` — or, if faster, run `tsc --noEmit -p`
+   on the package's `tsconfig.json` directly.
+4. **Lint** the changed scope: `turbo run lint --filter=<pkg>`.
+
+If typecheck or lint reports an error attributable to the change, fix it within the
+single-instance scope, or abandon the instance (clean abort per Safety rails). A
+pre-existing failure unrelated to the change does not block — but state that in the
+PR's "Why this is behaviour-preserving" so the reviewer knows.
+
 ## PR format
 
 ## Resolving preview links
