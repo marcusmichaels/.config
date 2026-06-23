@@ -59,6 +59,28 @@ word kebab summary of the target (e.g. the component or file name + change).
 
 ## Per-run procedure
 
+Follow in order. Stop (silently, releasing the lock) at any "no clean instance".
+
+1. **Pre-flight safety check** (lockfile + clean tree — see Safety rails).
+2. Read the target repo's `AGENTS.md` / `CLAUDE.md` if present; conform to it.
+3. Resolve the rule: the named one, or (bare) auto-pick per the Invocation
+   heuristic.
+4. **Dedup** against my own open PRs for this rule; skip instances already in
+   flight:
+   `gh pr list --author "@me" --state open --search "head:marcus/<rule>/" --json number,headRefName,files`
+5. Run the rule's `## Find`; for each candidate apply the rule's `## Guards`. Pick
+   ONE clean instance. None? Release lock and STOP — silence is success.
+6. **Create + checkout** `marcus/<rule>/<short-slug>`.
+7. Apply the fix (single instance only). Re-read the surrounding code to confirm
+   behaviour-preservation per the rule's `## Why behaviour-preserving`.
+8. **Verify locally** (see Local verification). If it fails and you cannot fix it
+   within scope, `git checkout main && git branch -D <branch>`, release lock, STOP.
+9. Commit (author `marcus@ffern.co`, no co-author trailer, Conventional Commits
+   title) and push the run branch.
+10. Open the PR assigned to me (see PR format).
+11. Resolve preview links and edit them into the body (see Resolving preview links).
+12. Release the lock. Print the outcome summary.
+
 ## Local verification
 
 ## PR format
