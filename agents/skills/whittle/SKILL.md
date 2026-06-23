@@ -100,8 +100,49 @@ PR's "Why this is behaviour-preserving" so the reviewer knows.
 
 ## PR format
 
+Reads like a PR I opened by hand.
+
+- **Commit/author:** `git commit` as `marcus@ffern.co`. No `Co-Authored-By`
+  trailer. Conventional Commits subject, no bot prefix —
+  e.g. `refactor: drop redundant else after early return in CheckoutSummary`.
+- **Open it assigned to me, no labels:**
+
+  ```sh
+  gh pr create --assignee "@me" --base main \
+    --head "marcus/<rule>/<short-slug>" \
+    --title "<conventional-commits subject>" \
+    --body-file <tmpfile>
+  ```
+
+- **Body — exactly these three sections, no footer:**
+
+  ```markdown
+  ## What
+  <One paragraph: what was wrong, what changed.>
+
+  ## Why this is behaviour-preserving
+  - <The provable-equivalence argument for THIS change, from the rule.>
+  - <Scope: N file(s); typecheck + lint pass locally.>
+
+  ## How to test
+  - **Pages affected:** <resolved preview links at the affected route(s)>
+  - **Tester state:** <logged out / logged-in member / active subscription /
+    mid-checkout / locale… or "None" if static>
+  - **Storybook:** <resolved story preview link, or omit if no story>
+  ```
+
+Build "Pages affected" by tracing importers of the changed file up to page entry
+points (`apps/ffern.co/src/pages/**`). Infer "Tester state" from those pages
+(portal → logged-in member; checkout → active basket; marketing → None).
+
 ## Resolving preview links
 
 ## Outcome summary
+
+End every run with exactly one line so a `screen` reattach shows the result:
+
+- Opened a PR: `whittle: opened <pr-url> — <rule>: <one-line what>.`
+- Nothing to do: `whittle: no clean instance found — nothing opened.`
+- Aborted: `whittle: aborted — <reason>.`
 
 ## Rules
