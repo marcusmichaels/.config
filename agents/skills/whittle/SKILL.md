@@ -137,6 +137,32 @@ points (`apps/ffern.co/src/pages/**`). Infer "Tester state" from those pages
 
 ## Resolving preview links
 
+Preview URLs are NOT constructible from the branch name (Vercel truncates long
+branches and appends a hash). Resolve them from the PR's deployment statuses after
+push. Bounded to ~90s total; never block longer.
+
+1. Get the head SHA: `gh pr view <num> --json headRefOid --jq .headRefOid`.
+2. Poll deployments (up to ~90s, ~6 tries × 15s):
+
+   ```sh
+   gh api "repos/{owner}/{repo}/deployments?sha=<sha>" \
+     --jq '.[] | {env: .environment, id: .id}'
+   gh api "repos/{owner}/{repo}/deployments/<id>/statuses" \
+     --jq '.[0] | {state, url: .environment_url}'
+   ```
+
+   (Or read `gh pr view <num> --json statusCheckRollup` and take the Vercel
+   checks' `targetUrl`s.)
+3. Match by project: the **`ffern-ui`** deployment is Storybook; the **`ffern.co`**
+   deployment is the app. Team scope: `ffern`.
+4. Compose deep links and `gh pr edit <num> --body-file <updated>`:
+   - App page: `<ffern.co-url>/<affected-route>`
+   - Storybook: `<ffern-ui-url>/?path=/story/<storyId>` where `storyId` =
+     kebab-cased story `title` + `--<export>` (e.g. `title: "Components/FfernButton"`
+     → `components-ffernbutton--default`).
+5. **Fallback:** if not READY within the window, set the lines to
+   `App & Storybook previews: see the Vercel checks on this PR.` Do not block.
+
 ## Outcome summary
 
 End every run with exactly one line so a `screen` reattach shows the result:
@@ -146,3 +172,13 @@ End every run with exactly one line so a `screen` reattach shows the result:
 - Aborted: `whittle: aborted — <reason>.`
 
 ## Rules
+
+Each rule is a self-contained file in `rules/`. Read the target rule's file for its
+Goal, Why-behaviour-preserving, Precondition, In scope, Find, and Guards.
+
+- `flatten-else-after-return` — drop an `else` after an unconditional `if` exit.
+- `unreachable-code-removal` — remove statements after an unconditional exit.
+- `canonical-tailwind-classes` — arbitrary-px Tailwind class → canonical scale.
+
+To add a rule: drop a new `rules/<name>.md` following the same section contract and
+add a line here. No code changes needed.
