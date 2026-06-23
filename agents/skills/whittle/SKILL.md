@@ -27,11 +27,15 @@ obvious; skip.
 
 These override everything. An unattended agent must never destroy work.
 
-1. **Pre-flight lock.** Take a lockfile in the COMMON git dir
-   (`$(git rev-parse --git-common-dir)/whittle.lock`, shared across worktrees): if
-   it exists, print `whittle: another run holds the lock — exiting.` and STOP.
-   Otherwise create it. (No clean-tree check — whittle never touches the primary
-   checkout, so it doesn't matter if I have uncommitted work.)
+1. **Unbounded parallelism — claim by branch name, NO global lock.** Any number of
+   whittle runs may run at once (one per terminal), as many as the machine and the
+   supply of clean candidates allow. There is no lockfile and no cap. Collisions are
+   prevented by the branch name: the run branch is derived **deterministically** from
+   the instance being fixed (`<rule>/<file-or-component-slug>`), and
+   `git worktree add -b <rule>/<slug> origin/main` is the atomic claim — all runs
+   share one `.git`, so the same fix can be claimed only once; a losing run backs off
+   to another candidate or exits. (No clean-tree check — whittle never touches the
+   primary checkout, so uncommitted work doesn't matter.)
 2. **Never touch the primary checkout.** ALL work happens in an ephemeral git
    worktree (see Per-run procedure). Never edit, branch-switch, stash, or `git add`
    in the checkout the user is coding in. Searching it read-only (grep/glob) is fine.
@@ -42,9 +46,9 @@ These override everything. An unattended agent must never destroy work.
 5. **Edits scoped to the single target instance.** No bulk deletes, no `rm -rf`, no
    touching files outside the one fix.
 6. **No remote/account mutations** beyond opening the one PR and assigning it to me.
-7. **Always tear down + unlock on exit.** On success OR any abort: remove the
-   worktree (`git worktree remove --force <tmp>` + `git worktree prune`) and release
-   the lockfile. Never leave a pushed branch with no PR or a half-formed PR.
+7. **Always tear down on exit.** On success OR any abort: remove the worktree
+   (`git worktree remove --force <tmp>` + `git worktree prune`). Never leave a
+   pushed branch with no PR or a half-formed PR.
 
 ## Invocation
 
@@ -61,21 +65,25 @@ word kebab summary of the target (e.g. the component or file name + change).
 
 ## Per-run procedure
 
-Follow in order. Stop (silently, tearing down + releasing the lock) at any "no
-clean instance".
+Follow in order. Stop (silently, tearing down any worktree) at any "no clean
+instance". Many runs may execute this concurrently — correctness comes from the
+branch claim in step 6, not from any lock.
 
-1. **Pre-flight lock** (common-dir lockfile — see Safety rails).
+1. **Start** — no lock, no clean-tree check (see Safety rails #1).
 2. Read the target repo's `AGENTS.md` / `CLAUDE.md` if present; conform to it.
 3. Resolve the rule: the named one, or (bare) auto-pick per the Invocation
    heuristic.
-4. **Dedup** against my own open PRs for this rule; skip instances already in
+4. **Dedup** against my own open PRs for this rule; drop instances already in
    flight:
    `gh pr list --author "@me" --state open --search "head:<rule>/" --json number,headRefName,files`
-5. Run the rule's `## Find` against the primary checkout **read-only**; for each
-   candidate apply the rule's `## Guards`. Pick ONE clean instance and note its
-   file path. None? Release lock and STOP — silence is success.
-6. **Create the ephemeral worktree** (see snippet below). All later steps run
-   inside `$WT`, never the primary checkout.
+5. Run the rule's `## Find` against the primary checkout **read-only**; apply the
+   rule's `## Guards`. **Shuffle** the surviving candidates. Walk them in order: for
+   each, derive its deterministic slug `<rule>/<file-or-component-slug>` and
+   pre-skip any whose branch already exists locally or on origin
+   (`git ls-remote --heads origin <rule>/<slug>`). None left? STOP — silence.
+6. **Claim by creating the worktree** (snippet below). If `worktree add` fails
+   because the branch exists, a concurrent run claimed that fix — go back to step 5
+   for the next candidate. On success, all later steps run inside `$WT`.
 7. In `$WT`, **re-confirm the candidate exists in the `origin/main` checkout** (the
    step-5 search hit the primary checkout, which may carry my uncommitted WIP). If
    it's gone, tear down and STOP — silence is success. Otherwise apply the fix
@@ -87,28 +95,36 @@ clean instance".
 10. Open the PR assigned to me (see PR format).
 11. Resolve preview links and edit them into the body (see Resolving preview links).
 12. **Tear down:** `cd` out of `$WT`, `git worktree remove --force "$WT"`,
-    `git worktree prune`. Release the lock. Print the outcome summary.
+    `git worktree prune`. Print the outcome summary.
 
 ### Worktree setup snippet
 
 ```sh
 MAIN="$(git rev-parse --show-toplevel)"
 REPO="$(basename "$MAIN")"
-SLUG="<short-slug>"
+SLUG="<file-or-component-slug>"   # deterministic from the instance — the claim ticket
+BRANCH="<rule>/$SLUG"
 WT="$HOME/.cache/whittle/$REPO/$SLUG"
 
 git -C "$MAIN" fetch origin
-git -C "$MAIN" worktree add "$WT" -b "<rule>/$SLUG" origin/main
+
+# Atomic claim. If this fails because the branch exists, another run got there
+# first — back off to the next candidate (step 5). Retry transient git-lock errors.
+git -C "$MAIN" worktree add "$WT" -b "$BRANCH" origin/main
 
 # Reuse node_modules from the primary checkout (option B — no install):
 ln -s "$MAIN/node_modules" "$WT/node_modules"
 # plus each workspace's node_modules (the worktree already has the source tree):
 ( cd "$MAIN" && find apps packages -maxdepth 2 -type d -name node_modules -prune 2>/dev/null ) \
   | while read -r d; do ln -s "$MAIN/$d" "$WT/$d"; done
+
+# Per-run turbo cache so concurrent runs don't thrash a shared one:
+export TURBO_CACHE_DIR="$WT/.turbo-cache"
 ```
 
-If `git worktree add` fails (e.g. branch exists), pick a fresh slug or abort
-cleanly. Always reach step 12 teardown even on abort.
+Under heavy concurrency, `fetch`/`worktree add` may hit transient git lock errors
+(`unable to lock`) — wait briefly and retry a couple of times before giving up.
+Always reach step 12 teardown even on abort.
 
 ## Local verification
 

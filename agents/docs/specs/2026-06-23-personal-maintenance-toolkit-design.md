@@ -59,8 +59,9 @@ An unattended agent must never be able to destroy work. These override everythin
   my feature while whittle runs.
 - **Always work off fresh `origin/main` in the worktree.** The worktree is created
   with `git worktree add <tmp> -b <rule>/<slug> origin/main` after a
-  `git fetch`. No edits ever happen outside that worktree; if it can't be created,
-  abort.
+  `git fetch`. The branch name is derived **deterministically** from the target
+  instance (see "claim by branch name" below). No edits ever happen outside that
+  worktree; if it can't be created, abort.
 - **Never push to `main`** (or the default branch). whittle only ever pushes the run
   branch it created (`<rule>/<slug>`).
 - **Never force-push, never rewrite history, never delete branches** — not its own,
@@ -75,11 +76,24 @@ An unattended agent must never be able to destroy work. These override everythin
   unwind: never leave a pushed branch with no PR or a half-formed PR. **Always
   remove the worktree on exit** (`git worktree remove --force` + `git worktree
   prune`), success or abort — it is disposable scratch space.
-- **One run at a time.** Take a lockfile in the **common** git dir
-  (`$(git rev-parse --git-common-dir)/whittle.lock`, shared across worktrees) at the
-  start; if it exists, exit immediately. This stops two concurrent `screen` runs
-  from racing the same instance before either opens its PR (the open-PR dedup only
-  catches already-opened PRs). Release the lock on exit, success or abort.
+- **Unbounded parallelism via claim-by-branch-name (no global lock).** Any number of
+  whittle runs may run at once — one per terminal / `claude` instance, as many as the
+  machine and the supply of clean candidates allow. There is **no cap and no global
+  lockfile.** Collision-safety comes from the branch name instead:
+  - The run branch is derived **deterministically** from the instance being fixed
+    (`<rule>/<file-or-component-slug>`), so the *same* fix always maps to the *same*
+    branch.
+  - `git worktree add -b <rule>/<slug> origin/main` is the **atomic claim** — all
+    runs share the one `.git`, so if two runs pick the same fix, the first to create
+    the branch wins and the second's `worktree add` fails. The loser backs off to a
+    different candidate, or exits if none remain.
+  - Distinct fixes → distinct branches → run fully in parallel. The same fix →
+    caught atomically by git → never duplicated.
+  - **Spread the pick:** shuffle the candidate list before claiming (don't all grab
+    "the cleanest") so many concurrent runs don't cascade through collisions.
+  - Cheap pre-skip before the atomic claim: skip candidates whose branch already
+    exists locally or on the remote (`git ls-remote --heads origin <rule>/<slug>`),
+    in addition to the open-PR dedup.
 
 ## Other hard constraints
 
@@ -146,14 +160,22 @@ it runs. Each run:
    (`apps/*`, `packages/*`). Near-instant. whittle changes no dependencies, so the
    primary checkout's modules are valid for the change. Local verification is
    therefore **best-effort**; the PR's GitHub CI is the authoritative gate.
-   (Caveat: turbo may write caches into the shared `node_modules/.cache` — harmless,
-   but a known cross-write with the primary checkout.)
 4. Do all work in `<tmp>`; commit; push the run branch; open the PR.
 5. **Always** tear down: `git worktree remove --force <tmp>` + `git worktree prune`.
    The branch persists on the remote for the PR; the local scratch checkout is gone.
 
-The single-run lockfile lives in the **common** git dir (shared by all worktrees),
-so concurrent runs are still serialised.
+**Built for unbounded parallelism.** Run as many at once as the machine and the
+candidate supply allow — see the claim-by-branch-name safety rail. Two guards make
+high concurrency safe:
+
+- **Git lock retries.** Many runs hitting the one shared `.git` (`fetch`,
+  `worktree add`) can briefly collide on git's internal lockfiles. On a transient
+  "unable to lock" error, wait a moment and retry (a couple of times) rather than
+  aborting.
+- **Per-run turbo cache.** N concurrent verify steps sharing one
+  `node_modules/.cache` would thrash it, so each run points turbo at its own cache
+  dir (e.g. `TURBO_CACHE_DIR="$WT/.turbo-cache"` or `--cache-dir`). Since CI is the
+  authoritative gate, a local cache hiccup never blocks anyway.
 
 ---
 
@@ -185,29 +207,35 @@ must complete start-to-finish with no operator present:
 
 ### Per-run procedure
 
-1. **Pre-flight.** Take the lockfile in the common git dir; if held, exit. (No
-   clean-tree check needed — whittle never touches the primary checkout.)
+1. **Start.** No lock, no clean-tree check — whittle never touches the primary
+   checkout, and runs are parallel-safe by branch claim (below).
 2. Read the target repo's standards doc (`AGENTS.md` / `CLAUDE.md`) if present.
 3. Resolve the rule (named, or auto-pick cleanest available).
-4. Dedup: list my own open PRs by branch prefix; avoid instances already in flight.
+4. Dedup: list my own open PRs by branch prefix; drop instances already in flight.
    ```sh
    gh pr list --author "@me" --state open \
      --search "head:<rule>/" --json number,title,headRefName,files
    ```
-5. Find candidates (search the primary checkout read-only); pick the cleanest.
-6. **Create the ephemeral worktree:** `git fetch origin`, then
-   `git worktree add <tmp> -b <rule>/<slug> origin/main`. From here, all
-   work happens in `<tmp>`. Symlink `node_modules` from the primary checkout
-   (root + each workspace).
-7. Apply the fix in the worktree. Verify behaviour-preservation by reading the
-   surrounding code.
+5. Find candidates (search the primary checkout read-only). **Shuffle** them, then
+   for each in turn derive its deterministic slug `<rule>/<file-or-component-slug>`
+   and pre-skip any whose branch already exists locally or on the remote
+   (`git ls-remote --heads origin <rule>/<slug>`). None left? STOP — silence.
+6. **Claim by creating the worktree:** `git fetch origin`, then
+   `git worktree add <tmp> -b <rule>/<slug> origin/main` (retry on transient git
+   lock errors). If it fails because the branch already exists, a concurrent run
+   claimed that fix — go back to step 5 for the next candidate. On success, all
+   work now happens in `<tmp>`: symlink `node_modules` from the primary checkout
+   (root + each workspace), and set a per-run `TURBO_CACHE_DIR` inside `<tmp>`.
+7. Re-confirm the candidate exists in the `origin/main` checkout (the step-5 search
+   may have hit my uncommitted WIP); if gone, tear down and STOP. Otherwise apply
+   the fix and verify behaviour-preservation by reading the surrounding code.
 8. **Verify locally** (best-effort — see below).
 9. Commit, then push the run branch (never `main`).
 10. Open the PR assigned to me, with a provisional "How to test" section.
 11. Resolve Vercel preview URLs from the PR's deployment statuses and edit the
     resolved deep links into the body (see "How to test" below).
-12. **Tear down the worktree** (`git worktree remove --force <tmp>` + prune),
-    release the lock, and print a one-line outcome summary.
+12. **Tear down the worktree** (`git worktree remove --force <tmp>` + prune) and
+    print a one-line outcome summary.
 
 ---
 
@@ -393,6 +421,10 @@ concern); any doubt about reachability — skip.
   `origin/main` (outside the repo), so the primary checkout is never touched and I
   can keep coding. `node_modules` reused from the primary checkout via symlink
   (option B); worktree always torn down on exit.
+- **Concurrency:** unbounded — run as many at once (one per terminal) as the machine
+  and candidate supply allow. No global lock; collisions are prevented by
+  claim-by-branch-name (deterministic per-instance branch + atomic `worktree add`),
+  with shuffled candidate picking, git-lock retries, and a per-run turbo cache.
 - **PR:** authored by + assigned to me; branch `<rule>/<slug>`; Conventional
   Commits title; What / Why-behaviour-preserving / How-to-test body; no labels, no
   footer.
