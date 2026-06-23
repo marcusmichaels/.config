@@ -27,22 +27,24 @@ obvious; skip.
 
 These override everything. An unattended agent must never destroy work.
 
-1. **Pre-flight.** Take a lockfile: if `.git/whittle.lock` exists, print
-   `whittle: another run holds the lock — exiting.` and STOP. Otherwise create it.
-   Then confirm `git status --porcelain` is empty; if the tree is dirty, release
-   the lock and STOP with `whittle: working tree is dirty — aborting.`
-2. **Never push to `main`** or the repo's default branch. Only ever push the run
-   branch `marcus/<rule>/<short-slug>` that this run creates.
-3. **Always branch before editing.** Create + checkout the run branch first. If you
-   cannot, abort.
+1. **Pre-flight lock.** Take a lockfile in the COMMON git dir
+   (`$(git rev-parse --git-common-dir)/whittle.lock`, shared across worktrees): if
+   it exists, print `whittle: another run holds the lock — exiting.` and STOP.
+   Otherwise create it. (No clean-tree check — whittle never touches the primary
+   checkout, so it doesn't matter if I have uncommitted work.)
+2. **Never touch the primary checkout.** ALL work happens in an ephemeral git
+   worktree (see Per-run procedure). Never edit, branch-switch, stash, or `git add`
+   in the checkout the user is coding in. Searching it read-only (grep/glob) is fine.
+3. **Never push to `main`** or the default branch. Only ever push the run branch
+   `marcus/<rule>/<short-slug>` created in the worktree.
 4. **Never** force-push, rewrite history, delete branches, or run destructive git
    (`reset --hard`, `clean -fd`, `checkout -- .`).
 5. **Edits scoped to the single target instance.** No bulk deletes, no `rm -rf`, no
    touching files outside the one fix.
 6. **No remote/account mutations** beyond opening the one PR and assigning it to me.
-7. **Clean abort.** On any failure after branching, unwind: do not push a branch
-   with no PR; do not leave a half-formed PR. Always release the lockfile on exit
-   (success or abort).
+7. **Always tear down + unlock on exit.** On success OR any abort: remove the
+   worktree (`git worktree remove --force <tmp>` + `git worktree prune`) and release
+   the lockfile. Never leave a pushed branch with no PR or a half-formed PR.
 
 ## Invocation
 
@@ -59,44 +61,74 @@ word kebab summary of the target (e.g. the component or file name + change).
 
 ## Per-run procedure
 
-Follow in order. Stop (silently, releasing the lock) at any "no clean instance".
+Follow in order. Stop (silently, tearing down + releasing the lock) at any "no
+clean instance".
 
-1. **Pre-flight safety check** (lockfile + clean tree — see Safety rails).
+1. **Pre-flight lock** (common-dir lockfile — see Safety rails).
 2. Read the target repo's `AGENTS.md` / `CLAUDE.md` if present; conform to it.
 3. Resolve the rule: the named one, or (bare) auto-pick per the Invocation
    heuristic.
 4. **Dedup** against my own open PRs for this rule; skip instances already in
    flight:
    `gh pr list --author "@me" --state open --search "head:marcus/<rule>/" --json number,headRefName,files`
-5. Run the rule's `## Find`; for each candidate apply the rule's `## Guards`. Pick
-   ONE clean instance. None? Release lock and STOP — silence is success.
-6. **Create + checkout** `marcus/<rule>/<short-slug>`.
-7. Apply the fix (single instance only). Re-read the surrounding code to confirm
+5. Run the rule's `## Find` against the primary checkout **read-only**; for each
+   candidate apply the rule's `## Guards`. Pick ONE clean instance and note its
+   file path. None? Release lock and STOP — silence is success.
+6. **Create the ephemeral worktree** (see snippet below). All later steps run
+   inside `$WT`, never the primary checkout.
+7. In `$WT`, **re-confirm the candidate exists in the `origin/main` checkout** (the
+   step-5 search hit the primary checkout, which may carry my uncommitted WIP). If
+   it's gone, tear down and STOP — silence is success. Otherwise apply the fix
+   (single instance only) and re-read the surrounding code to confirm
    behaviour-preservation per the rule's `## Why behaviour-preserving`.
-8. **Verify locally** (see Local verification). If it fails and you cannot fix it
-   within scope, `git checkout main && git branch -D <branch>`, release lock, STOP.
+8. **Verify locally** (best-effort — see Local verification).
 9. Commit (author `marcus@ffern.co`, no co-author trailer, Conventional Commits
-   title) and push the run branch.
+   title) and push the run branch from `$WT`.
 10. Open the PR assigned to me (see PR format).
 11. Resolve preview links and edit them into the body (see Resolving preview links).
-12. Release the lock. Print the outcome summary.
+12. **Tear down:** `cd` out of `$WT`, `git worktree remove --force "$WT"`,
+    `git worktree prune`. Release the lock. Print the outcome summary.
+
+### Worktree setup snippet
+
+```sh
+MAIN="$(git rev-parse --show-toplevel)"
+REPO="$(basename "$MAIN")"
+SLUG="<short-slug>"
+WT="$HOME/.cache/whittle/$REPO/$SLUG"
+
+git -C "$MAIN" fetch origin
+git -C "$MAIN" worktree add "$WT" -b "marcus/<rule>/$SLUG" origin/main
+
+# Reuse node_modules from the primary checkout (option B — no install):
+ln -s "$MAIN/node_modules" "$WT/node_modules"
+# plus each workspace's node_modules (the worktree already has the source tree):
+( cd "$MAIN" && find apps packages -maxdepth 2 -type d -name node_modules -prune 2>/dev/null ) \
+  | while read -r d; do ln -s "$MAIN/$d" "$WT/$d"; done
+```
+
+If `git worktree add` fails (e.g. branch exists), pick a fresh slug or abort
+cleanly. Always reach step 12 teardown even on abort.
 
 ## Local verification
 
-Run on my machine before opening the PR. Never open a red PR.
+Runs inside `$WT`, whose `node_modules` are symlinked from the primary checkout, so
+it's fast. **GitHub CI on the PR is the authoritative gate** — local checks just
+catch the obvious before pushing.
 
-1. **Format** the changed files: `turbo run format` (Biome).
+1. **Format** the changed files: `turbo run format` (Biome). The committed diff must
+   be correctly formatted — do this always.
 2. **Determine the changed package** — the workspace whose dir contains the edited
    file (read its nearest `package.json` `name`). Call it `<pkg>`.
-3. **Typecheck** that package only:
-   `turbo run check-types --filter=<pkg>` — or, if faster, run `tsc --noEmit -p`
-   on the package's `tsconfig.json` directly.
-4. **Lint** the changed scope: `turbo run lint --filter=<pkg>`.
+3. **Best-effort typecheck:** `turbo run check-types --filter=<pkg>` (or
+   `tsc --noEmit -p` on the package's `tsconfig.json`).
+4. **Best-effort lint:** `turbo run lint --filter=<pkg>`.
 
-If typecheck or lint reports an error attributable to the change, fix it within the
-single-instance scope, or abandon the instance (clean abort per Safety rails). A
-pre-existing failure unrelated to the change does not block — but state that in the
-PR's "Why this is behaviour-preserving" so the reviewer knows.
+If typecheck/lint surfaces an error clearly caused by the change, fix it within the
+single-instance scope or abandon the instance (clean abort + teardown). If it can't
+run cleanly because of the symlinked-worktree environment (not the change itself),
+don't block — note "verified by CI" and proceed. Never *knowingly* open an
+obviously-broken PR.
 
 ## PR format
 
