@@ -9,6 +9,7 @@
 !/ghostty
 !/toolbox
 !/zshrc
+!/agents
 
 # We only want one file from zed's config
 !/zed/

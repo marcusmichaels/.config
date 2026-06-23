@@ -51,3 +51,8 @@ optimisejpg() {
     echo "Optimised ($quality): $file -> ${base}-optimised.jpg"
   done
 }
+
+code-llm() {
+  local model="${1:-$HOME/.luna/models/Qwen3.5-9B-Q4_K_M.gguf}"
+  llama-server -m "$model" --port 1337 -c 65536
+}

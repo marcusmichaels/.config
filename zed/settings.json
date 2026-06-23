@@ -1,54 +1,111 @@
 {
+  "cli_default_open_behavior": "new_window",
+  "project_panel": {
+    "dock": "left"
+  },
+  "outline_panel": {
+    "dock": "left"
+  },
+  "collaboration_panel": {
+    "dock": "left"
+  },
+  "agent_servers": {
+    "claude-acp": {
+      "favorite_config_option_values": {
+        "model": ["claude-fable-5"]
+      },
+      "default_config_options": {
+        "mode": "auto",
+        "model": "opus[1m]",
+        "effort": "default"
+      },
+      "type": "registry"
+    }
+  },
+  "git_panel": {
+    "dock": "left",
+    "collapse_untracked_diff": false
+  },
   "edit_predictions": {
-    "provider": "none",
+    "provider": "none"
   },
   "disable_ai": false,
   "format_on_save": "on",
   "tab_size": 2,
   "agent": {
+    "default_profile": "write",
+    "tool_permissions": {
+      "tools": {
+        "create_directory": {
+          "default": "allow"
+        },
+        "terminal": {
+          "default": "allow",
+          "always_allow": [
+            {
+              "pattern": "^git\\s+log(\\s|$)"
+            },
+            {
+              "pattern": "^cd\\s+ui/migrate\\-info\\-button(\\s|$)"
+            },
+            {
+              "pattern": "^git\\s+status(\\s|$)"
+            },
+            {
+              "pattern": "^cd\\s+ui/migrate\\-toast/apps/ffern\\.co(\\s|$)"
+            },
+            {
+              "pattern": "^sed\\b"
+            },
+            {
+              "pattern": "^cd\\s+main(\\s|$)"
+            },
+            {
+              "pattern": "^gh\\s+pr(\\s|$)"
+            },
+            {
+              "pattern": "^cd\\s+ui/migrate\\-page\\-header(\\s|$)"
+            },
+            {
+              "pattern": "^head\\b"
+            }
+          ]
+        }
+      }
+    },
+    "dock": "right",
     "expand_terminal_card": true,
-    "default_model": { "provider": "copilot_chat", "model": "claude-opus-4.6" },
-    "model_parameters": [],
+    "default_model": { "effort": "high", "enable_thinking": true, "provider": "copilot_chat", "model": "claude-opus-4.8" },
+    "model_parameters": []
   },
   "language_models": {
     "openai_compatible": {
-      "Luna": {
-        "api_url": "http://localhost:8080/v1",
+      "Local Coder": {
+        "api_url": "http://localhost:1337/v1",
         "available_models": [
           {
-            "name": "qwen3:4b",
-            "max_tokens": 40960,
-            "max_output_tokens": 40960,
-            "max_completion_tokens": 40960,
+            "name": "Qwen3.5-9B-Q4_K_M.gguf",
+            "display_name": "Qwen 3.5 9B",
+            "max_tokens": 65536,
             "capabilities": {
               "tools": true,
               "images": false,
               "parallel_tool_calls": false,
-              "prompt_cache_key": false,
-              "chat_completions": true,
-            },
-          },
-        ],
-      },
-      "lmstudio": {
-        "api_url": "http://localhost:1337/v1",
-        "available_models": [
-          {
-            "name": "qwen/qwen3-8b",
-            "display_name": "LMStudio qwen3-8b",
-            "max_tokens": 40960,
-            "capabilities": { "tools": true, "parallel_tool_calls": false, "images": false, "prompt_cache_key": false },
-          },
-          {
-            "name": "mistralai/devstral-small-2-2512",
-            "display_name": "LMStudio devstral-24b",
-            "max_tokens": 393216,
-            "capabilities": { "tools": true, "parallel_tool_calls": false, "images": false, "prompt_cache_key": false },
-          },
-        ],
-      },
-    },
+              "prompt_cache_key": false
+            }
+          }
+        ]
+      }
+    }
   },
+  "lsp": {
+    "typescript-language-server": {
+      "initialization_options": {
+        "maxTsServerMemory": 4096
+      }
+    }
+  },
+  "diff_view_style": "split",
   "preferred_line_length": 140,
   "soft_wrap": "bounded",
   "telemetry": { "diagnostics": false, "metrics": false },
@@ -57,17 +114,24 @@
   "relative_line_numbers": "enabled",
   "ui_font_size": 13,
   "buffer_font_size": 12,
-  "theme": "SynthWave 84 Dark",
+  "theme": "Synthwave84 High Contrast",
+  "prettier": { "trailingComma": "none" },
   "context_servers": {
+    "some-mcp-server": {
+      "enabled": true,
+      "remote": false,
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp@latest"]
+    },
     "MCP_DOCKER": {
       "enabled": false,
       "command": "docker",
-      "args": ["mcp", "gateway", "run"],
-    },
+      "args": ["mcp", "gateway", "run"]
+    }
   },
   "context_server_timeout": 600,
   "experimental.theme_overrides": {
-    "search.match_background": "#ff00f090",
-    "warning.background": "#FF00FF20",
-  },
+    // "search.match_background": "#ff00f090",
+    // "warning.background": "#FF00FF20",
+  }
 }
