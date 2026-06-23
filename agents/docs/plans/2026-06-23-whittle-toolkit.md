@@ -8,6 +8,8 @@
 
 **Tech Stack:** Markdown skill definition (no compiled code); consumed by Claude Code. Runtime tools the skill invokes: `git`, `gh`, `turbo`/`tsc`, file edits. Target repo here is the ffern Bun/Turborepo monorepo.
 
+> **Note (superseded in part):** after this plan was executed, whittle was revised to run each fix in an **ephemeral git worktree** off `origin/main` (node_modules symlinked from the primary checkout; CI is the authoritative gate) and the run branch was changed to `<rule>/<short-slug>` (no `marcus/` prefix). Where this plan's task bodies describe a "create+checkout branch", "refuse a dirty tree", or `.git/whittle.lock`, the **spec and `SKILL.md` are canonical** — see `docs/specs/2026-06-23-personal-maintenance-toolkit-design.md`.
+
 ## Global Constraints
 
 - **Home:** `~/.config/agents/skills/whittle/`. Not its own git repo — tracked by `~/.config`. Activated via symlink `~/.claude/skills/whittle` → `~/.config/agents/skills/whittle`.
@@ -15,7 +17,7 @@
 - **Safety rails (non-negotiable):** never push to `main`/default branch; always create+checkout the run branch before editing; never force-push / rewrite history / delete branches; no destructive git (`reset --hard`, `clean -fd`, `checkout -- .`); refuse a dirty starting tree; edits scoped to the single target instance; no `rm -rf`; no remote mutations beyond opening+assigning the one PR; clean abort leaving no orphan branch/PR; single-run lockfile at `.git/whittle.lock`.
 - **Run constraints:** one rule per run; one instance per PR; ≤300 lines net; silence is success; no drive-by changes; dedup against own open PRs by branch prefix; conform to the target repo's `AGENTS.md`/`CLAUDE.md` if present; never open a red PR.
 - **Unattended:** fully autonomous (no mid-run prompts); every wait bounded (Vercel poll ≤90s); ends with a one-line outcome summary.
-- **PR shape:** author `marcus@ffern.co`, no `Co-Authored-By` trailer, no bot prefix; assignee `@me`; branch `marcus/<rule>/<short-slug>`; Conventional Commits title; body sections **What** / **Why this is behaviour-preserving** / **How to test**; no labels; no footer.
+- **PR shape:** author `marcus@ffern.co`, no `Co-Authored-By` trailer, no bot prefix; assignee `@me`; branch `<rule>/<short-slug>`; Conventional Commits title; body sections **What** / **Why this is behaviour-preserving** / **How to test**; no labels; no footer.
 - **Starter rules:** `canonical-tailwind-classes`, `flatten-else-after-return`, `unreachable-code-removal`.
 
 ---
@@ -340,7 +342,7 @@ cd ~/.config && git add agents/skills/whittle/rules && git -c user.email="marcus
 
 **Interfaces:**
 - Consumes: the rule files (Tasks 3–4) by name.
-- Produces: the doctrine, the safety rails, and the two invocation modes. Defines the branch-name format `marcus/<rule>/<short-slug>` that all later sections reference.
+- Produces: the doctrine, the safety rails, and the two invocation modes. Defines the branch-name format `<rule>/<short-slug>` that all later sections reference.
 
 - [ ] **Step 1: Fill the Overview section**
 
@@ -375,7 +377,7 @@ These override everything. An unattended agent must never destroy work.
    Then confirm `git status --porcelain` is empty; if the tree is dirty, release
    the lock and STOP with `whittle: working tree is dirty — aborting.`
 2. **Never push to `main`** or the repo's default branch. Only ever push the run
-   branch `marcus/<rule>/<short-slug>` that this run creates.
+   branch `<rule>/<short-slug>` that this run creates.
 3. **Always branch before editing.** Create + checkout the run branch first. If you
    cannot, abort.
 4. **Never** force-push, rewrite history, delete branches, or run destructive git
@@ -403,7 +405,7 @@ Replace the empty `## Invocation` with:
   candidates, (c) in a leaf component/page with a clear set of affected routes. Stop
   at the first rule that yields one clean, guard-passing instance.
 
-Branch for the run: `marcus/<rule>/<short-slug>`, where `<short-slug>` is a 2–4
+Branch for the run: `<rule>/<short-slug>`, where `<short-slug>` is a 2–4
 word kebab summary of the target (e.g. the component or file name + change).
 ```
 
@@ -444,10 +446,10 @@ Follow in order. Stop (silently, releasing the lock) at any "no clean instance".
    heuristic.
 4. **Dedup** against my own open PRs for this rule; skip instances already in
    flight:
-   `gh pr list --author "@me" --state open --search "head:marcus/<rule>/" --json number,headRefName,files`
+   `gh pr list --author "@me" --state open --search "head:<rule>/" --json number,headRefName,files`
 5. Run the rule's `## Find`; for each candidate apply the rule's `## Guards`. Pick
    ONE clean instance. None? Release lock and STOP — silence is success.
-6. **Create + checkout** `marcus/<rule>/<short-slug>`.
+6. **Create + checkout** `<rule>/<short-slug>`.
 7. Apply the fix (single instance only). Re-read the surrounding code to confirm
    behaviour-preservation per the rule's `## Why behaviour-preserving`.
 8. **Verify locally** (see Local verification). If it fails and you cannot fix it
@@ -542,7 +544,7 @@ Reads like a PR I opened by hand.
 
   ```sh
   gh pr create --assignee "@me" --base main \
-    --head "marcus/<rule>/<short-slug>" \
+    --head "<rule>/<short-slug>" \
     --title "<conventional-commits subject>" \
     --body-file <tmpfile>
   ```

@@ -36,7 +36,7 @@ These override everything. An unattended agent must never destroy work.
    worktree (see Per-run procedure). Never edit, branch-switch, stash, or `git add`
    in the checkout the user is coding in. Searching it read-only (grep/glob) is fine.
 3. **Never push to `main`** or the default branch. Only ever push the run branch
-   `marcus/<rule>/<short-slug>` created in the worktree.
+   `<rule>/<short-slug>` created in the worktree.
 4. **Never** force-push, rewrite history, delete branches, or run destructive git
    (`reset --hard`, `clean -fd`, `checkout -- .`).
 5. **Edits scoped to the single target instance.** No bulk deletes, no `rm -rf`, no
@@ -56,7 +56,7 @@ These override everything. An unattended agent must never destroy work.
   candidates, (c) in a leaf component/page with a clear set of affected routes. Stop
   at the first rule that yields one clean, guard-passing instance.
 
-Branch for the run: `marcus/<rule>/<short-slug>`, where `<short-slug>` is a 2–4
+Branch for the run: `<rule>/<short-slug>`, where `<short-slug>` is a 2–4
 word kebab summary of the target (e.g. the component or file name + change).
 
 ## Per-run procedure
@@ -70,7 +70,7 @@ clean instance".
    heuristic.
 4. **Dedup** against my own open PRs for this rule; skip instances already in
    flight:
-   `gh pr list --author "@me" --state open --search "head:marcus/<rule>/" --json number,headRefName,files`
+   `gh pr list --author "@me" --state open --search "head:<rule>/" --json number,headRefName,files`
 5. Run the rule's `## Find` against the primary checkout **read-only**; for each
    candidate apply the rule's `## Guards`. Pick ONE clean instance and note its
    file path. None? Release lock and STOP — silence is success.
@@ -98,7 +98,7 @@ SLUG="<short-slug>"
 WT="$HOME/.cache/whittle/$REPO/$SLUG"
 
 git -C "$MAIN" fetch origin
-git -C "$MAIN" worktree add "$WT" -b "marcus/<rule>/$SLUG" origin/main
+git -C "$MAIN" worktree add "$WT" -b "<rule>/$SLUG" origin/main
 
 # Reuse node_modules from the primary checkout (option B — no install):
 ln -s "$MAIN/node_modules" "$WT/node_modules"
@@ -141,7 +141,7 @@ Reads like a PR I opened by hand.
 
   ```sh
   gh pr create --assignee "@me" --base main \
-    --head "marcus/<rule>/<short-slug>" \
+    --head "<rule>/<short-slug>" \
     --title "<conventional-commits subject>" \
     --body-file <tmpfile>
   ```

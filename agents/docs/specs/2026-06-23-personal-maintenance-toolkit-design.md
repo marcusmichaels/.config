@@ -58,11 +58,11 @@ An unattended agent must never be able to destroy work. These override everythin
   read, written, branch-switched, or stashed. This is what lets me keep working on
   my feature while whittle runs.
 - **Always work off fresh `origin/main` in the worktree.** The worktree is created
-  with `git worktree add <tmp> -b marcus/<rule>/<slug> origin/main` after a
+  with `git worktree add <tmp> -b <rule>/<slug> origin/main` after a
   `git fetch`. No edits ever happen outside that worktree; if it can't be created,
   abort.
 - **Never push to `main`** (or the default branch). whittle only ever pushes the run
-  branch it created (`marcus/<rule>/<slug>`).
+  branch it created (`<rule>/<slug>`).
 - **Never force-push, never rewrite history, never delete branches** — not its own,
   and especially not anyone else's.
 - **Never run destructive git** — no `reset --hard`, no `clean -fd`, no
@@ -136,7 +136,7 @@ whittle never works in my primary checkout, so I can keep coding my feature whil
 it runs. Each run:
 
 1. `git fetch origin` (so `origin/main` is current).
-2. `git worktree add <tmp> -b marcus/<rule>/<slug> origin/main` — a fresh checkout
+2. `git worktree add <tmp> -b <rule>/<slug> origin/main` — a fresh checkout
    of latest main on the run branch. `<tmp>` lives **outside the repo** (e.g.
    `~/.cache/whittle/<repo-name>/<slug>`) so it never appears in my working dir or
    `git status`.
@@ -192,11 +192,11 @@ must complete start-to-finish with no operator present:
 4. Dedup: list my own open PRs by branch prefix; avoid instances already in flight.
    ```sh
    gh pr list --author "@me" --state open \
-     --search "head:marcus/<rule>/" --json number,title,headRefName,files
+     --search "head:<rule>/" --json number,title,headRefName,files
    ```
 5. Find candidates (search the primary checkout read-only); pick the cleanest.
 6. **Create the ephemeral worktree:** `git fetch origin`, then
-   `git worktree add <tmp> -b marcus/<rule>/<slug> origin/main`. From here, all
+   `git worktree add <tmp> -b <rule>/<slug> origin/main`. From here, all
    work happens in `<tmp>`. Symlink `node_modules` from the primary checkout
    (root + each workspace).
 7. Apply the fix in the worktree. Verify behaviour-preservation by reading the
@@ -237,7 +237,7 @@ These must read like PRs I opened by hand.
 - **Author:** my real identity — `marcus@ffern.co`, normal `git commit`. **No**
   `Co-Authored-By` trailer (standing preference). No bot prefix anywhere.
 - **Assignee:** me — `gh pr create --assignee @me`.
-- **Branch:** `marcus/<rule>/<short-slug>` — obviously my branch, still groups by
+- **Branch:** `<rule>/<short-slug>` — obviously my branch, still groups by
   rule for the dedup search.
 - **Title:** plain Conventional Commits — e.g.
   `refactor: drop redundant else after early return in CheckoutSummary`.
@@ -393,7 +393,7 @@ concern); any doubt about reachability — skip.
   `origin/main` (outside the repo), so the primary checkout is never touched and I
   can keep coding. `node_modules` reused from the primary checkout via symlink
   (option B); worktree always torn down on exit.
-- **PR:** authored by + assigned to me; branch `marcus/<rule>/<slug>`; Conventional
+- **PR:** authored by + assigned to me; branch `<rule>/<slug>`; Conventional
   Commits title; What / Why-behaviour-preserving / How-to-test body; no labels, no
   footer.
 - **Preview links:** resolved from the PR's Vercel deployment statuses (ffern-ui =
