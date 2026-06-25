@@ -61,7 +61,8 @@ PR body, and press on. Never block on input.
 4. Commit (`hello@marcusmichaels.com`, no co-author trailer, Conventional Commits title) and
    push the branch from `$WT`.
 5. Open the PR assigned to me (see PR format), build its How-to-test and resolve
-   preview links per the shared playbook.
+   preview links per `~/.config/agents/skills/_shared/worktree-and-pr.md`
+   ("Building \"How to test\"" + "Resolving preview links" + "Open the PR").
 6. Enter the CI watch-loop.
 
 ## CI watch-loop
