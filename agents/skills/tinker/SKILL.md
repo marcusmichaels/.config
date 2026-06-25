@@ -86,8 +86,58 @@ exactly which check beat it.
 
 ## PR format
 
+Like a PR I opened by hand, framed for a behaviour-*changing* fix.
+
+- **Author/assignee:** commit as `hello@marcusmichaels.com`, no `Co-Authored-By` trailer;
+  `gh pr create --assignee "@me"`; no labels.
+- **Branch:** `fix/<slug>` (or `feat/`/`chore/` if clearly otherwise).
+- **Title:** Conventional Commits — e.g.
+  `fix: stop portal showing returns window closed when it is open`.
+- **Body — three sections, no footer:**
+
+  ```markdown
+  ## Root cause
+  <what was actually wrong, with file:line evidence from the investigation>
+
+  ## The fix
+  <what changed and why it addresses the root cause>
+
+  ## How to test
+  - **Pages affected:** <preview links at the affected route(s)>
+  - **Tester state:** <logged-in member / active subscription / etc., or "None">
+  - **Storybook:** <story preview link if a component changed; omit otherwise>
+  ```
+
+There is NO "Why behaviour-preserving" section — tinker changes behaviour on
+purpose. Build How-to-test + preview links per the shared playbook.
+
 ## Verification
+
+- **No local typecheck/lint** — CI is both the gate and the signal the watch-loop
+  acts on, so local type/lint checks are redundant.
+- **`turbo run format`** before committing — instant, avoids burning a CI cycle on
+  a formatting nit.
+- Everything else is proven by the PR's CI checks.
 
 ## Safety rails
 
+Inherits the shared non-destructive rails (never push `main`/default; all work in
+the ephemeral worktree, never the primary checkout; claim-by-branch; never
+force-push / rewrite history / delete others' branches; no destructive git; no
+remote mutations beyond the one PR; clean teardown). Plus tinker-specific:
+
+- **Nothing is written before the gate.** Phase 1 is strictly read-only — no
+  worktree, branch, or edit until I say "go".
+- **No questions after the gate.** Once I detach, never block on input — decide and
+  document, or stop tidily (draft + summary).
+- **Scoped to the brief.** Behaviour change is the point, so the behaviour-preserving
+  doctrine does NOT apply — but no drive-by edits beyond what the agreed fix needs.
+- **Stuck = draft, not abandon.** Preserve the work; never silently bin it.
+
 ## Outcome summary
+
+End every run with one line so a `screen` reattach shows the result:
+
+- Green: `tinker: <pr-url> is green — <one-line what was fixed>.`
+- Stuck: `tinker: <pr-url> left as draft — <failing check> still red after 3 tries.`
+- Pre-gate exit: `tinker: stopped before building — <reason>.`
