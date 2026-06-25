@@ -94,37 +94,16 @@ branch claim in step 6, not from any lock.
    title) and push the run branch from `$WT`.
 10. Open the PR assigned to me (see PR format).
 11. Resolve preview links and edit them into the body (see Resolving preview links).
-12. **Tear down:** `cd` out of `$WT`, `git worktree remove --force "$WT"`,
-    `git worktree prune`. Print the outcome summary.
+12. **Tear down immediately** (whittle does not tend CI): per the shared playbook's
+    "Teardown" section — `git worktree remove --force "$WT"` + `git worktree prune`.
+    Print the outcome summary.
 
-### Worktree setup snippet
+### Worktree setup
 
-```sh
-MAIN="$(git rev-parse --show-toplevel)"
-REPO="$(basename "$MAIN")"
-SLUG="<file-or-component-slug>"   # deterministic from the instance — the claim ticket
-BRANCH="<rule>/$SLUG"
-WT="$HOME/.cache/whittle/$REPO/$SLUG"
-
-git -C "$MAIN" fetch origin
-
-# Atomic claim. If this fails because the branch exists, another run got there
-# first — back off to the next candidate (step 5). Retry transient git-lock errors.
-git -C "$MAIN" worktree add "$WT" -b "$BRANCH" origin/main
-
-# Reuse node_modules from the primary checkout (option B — no install):
-ln -s "$MAIN/node_modules" "$WT/node_modules"
-# plus each workspace's node_modules (the worktree already has the source tree):
-( cd "$MAIN" && find apps packages -maxdepth 2 -type d -name node_modules -prune 2>/dev/null ) \
-  | while read -r d; do ln -s "$MAIN/$d" "$WT/$d"; done
-
-# Per-run turbo cache so concurrent runs don't thrash a shared one:
-export TURBO_CACHE_DIR="$WT/.turbo-cache"
-```
-
-Under heavy concurrency, `fetch`/`worktree add` may hit transient git lock errors
-(`unable to lock`) — wait briefly and retry a couple of times before giving up.
-Always reach step 12 teardown even on abort.
+Follow `~/.config/agents/skills/_shared/worktree-and-pr.md` — sections "Claim by
+branch name" and "Worktree setup" — with **`<branch>` = `<rule>/<slug>`** (the
+deterministic per-instance slug from step 5). If the claim fails because the branch
+exists, a concurrent run took that fix — go back to step 5 for the next candidate.
 
 ## Local verification
 
@@ -185,31 +164,9 @@ points (`apps/ffern.co/src/pages/**`). Infer "Tester state" from those pages
 
 ## Resolving preview links
 
-Preview URLs are NOT constructible from the branch name (Vercel truncates long
-branches and appends a hash). Resolve them from the PR's deployment statuses after
-push. Bounded to ~90s total; never block longer.
-
-1. Get the head SHA: `gh pr view <num> --json headRefOid --jq .headRefOid`.
-2. Poll deployments (up to ~90s, ~6 tries × 15s):
-
-   ```sh
-   gh api "repos/{owner}/{repo}/deployments?sha=<sha>" \
-     --jq '.[] | {env: .environment, id: .id}'
-   gh api "repos/{owner}/{repo}/deployments/<id>/statuses" \
-     --jq '.[0] | {state, url: .environment_url}'
-   ```
-
-   (Or read `gh pr view <num> --json statusCheckRollup` and take the Vercel
-   checks' `targetUrl`s.)
-3. Match by project: the **`ffern-ui`** deployment is Storybook; the **`ffern.co`**
-   deployment is the app. Team scope: `ffern`.
-4. Compose deep links and `gh pr edit <num> --body-file <updated>`:
-   - App page: `<ffern.co-url>/<affected-route>`
-   - Storybook: `<ffern-ui-url>/?path=/story/<storyId>` where `storyId` =
-     kebab-cased story `title` + `--<export>` (e.g. `title: "Components/FfernButton"`
-     → `components-ffernbutton--default`).
-5. **Fallback:** if not READY within the window, set the lines to
-   `App & Storybook previews: see the Vercel checks on this PR.` Do not block.
+Follow `~/.config/agents/skills/_shared/worktree-and-pr.md` — sections "Building
+\"How to test\"" and "Resolving preview links" — to populate the PR's How-to-test
+section with the affected routes, tester state, and Storybook/app preview deep-links.
 
 ## Outcome summary
 
