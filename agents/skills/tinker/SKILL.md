@@ -47,7 +47,42 @@ my explicit "go" do you enter Phase 2.
 
 ## Phase 2 — autonomous build
 
+Begins only after "go". I have detached — ask NO questions from here. If you hit
+ambiguity you couldn't foresee, make the most reasonable decision, note it in the
+PR body, and press on. Never block on input.
+
+1. **Create the worktree** per `~/.config/agents/skills/_shared/worktree-and-pr.md`
+   ("Claim by branch name" + "Worktree setup"), with **`<branch>` = `fix/<slug>`**
+   (`<slug>` = a 2–4 word kebab summary of the fix; type is `fix/` for bugs,
+   `feat/`/`chore/` if clearly otherwise).
+2. Implement the agreed fix in `$WT` — scoped to the brief, no drive-by edits.
+3. `turbo run format` on the changed files. (No local typecheck/lint — CI is the
+   signal; see Verification.)
+4. Commit (`hello@marcusmichaels.com`, no co-author trailer, Conventional Commits title) and
+   push the branch from `$WT`.
+5. Open the PR assigned to me (see PR format), build its How-to-test and resolve
+   preview links per the shared playbook.
+6. Enter the CI watch-loop.
+
 ## CI watch-loop
+
+Drive the PR's CI checks to green. The worktree stays alive through this loop.
+
+1. Poll the PR's checks until they settle (bounded — checks usually finish in
+   minutes; don't wait unboundedly):
+   `gh pr checks <num>` / `gh pr view <num> --json statusCheckRollup`.
+2. **On a failing check** (up to **3 attempts** total):
+   - Fetch the failure detail: `gh run view <run-id> --log-failed`, or open the
+     check's `targetUrl`.
+   - Diagnose and fix in the same `$WT`; commit; push; re-poll from step 1.
+3. **All required checks green → done.** Tear down (shared playbook "Teardown").
+4. **Still red after 3 attempts → stop tidily:**
+   - `gh pr ready --undo <num>` to convert the PR to a draft.
+   - Post a comment (`gh pr comment <num>`): which check is failing, the error, and
+     each fix you tried.
+   - Tear down the worktree.
+A stuck run is still useful — I get the investigation, the attempted fix, and
+exactly which check beat it.
 
 ## PR format
 
