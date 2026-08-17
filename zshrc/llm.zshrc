@@ -3,7 +3,10 @@
 # Independent of Luna (~/Sites/localluna); it just shares the models dir.
 
 LLM_CODER_PORT=1337
-LLM_CODER_MODEL="$HOME/.luna/models/Huihui-Qwen3.5-9B-Claude-4.6-Opus-abliterated.i1-Q4_K_M.gguf"
+# Shared with Luna today so nothing has to move. Point this somewhere else if
+# you want the coder's models fully separate — code-llm-download writes here.
+LLM_CODER_MODELS_DIR="$HOME/.luna/models"
+LLM_CODER_MODEL="$LLM_CODER_MODELS_DIR/Huihui-Qwen3.5-9B-Claude-4.6-Opus-abliterated.i1-Q4_K_M.gguf"
 LLM_CODER_LOG="$HOME/.luna/logs/coder.log"
 LLM_CODER_PID="$HOME/.luna/coder.pid"
 
@@ -78,4 +81,85 @@ code-llm-status() {
   else
     echo "not running"
   fi
+}
+
+# Fetch a GGUF from Hugging Face into $LLM_CODER_MODELS_DIR.
+#   code-llm-download <repo>              list the GGUFs in that repo
+#   code-llm-download <repo> <file.gguf>  download it (resumable)
+#
+# Listing first is the point: most model repos publish a dozen-plus quants, and
+# the plain <name> repo is usually safetensors — you want <name>-GGUF.
+code-llm-download() {
+  local repo="$1" file="$2"
+
+  if [[ -z $repo ]]; then
+    echo "usage: code-llm-download <hf-repo> [file.gguf]"
+    echo "  e.g. code-llm-download unsloth/Qwen3.8-27B-GGUF"
+    return 1
+  fi
+
+  local json
+  if ! json=$(curl -fsSL "https://huggingface.co/api/models/$repo?blobs=true" 2>/dev/null); then
+    echo "repo not found or not readable: $repo"
+    return 1
+  fi
+
+  if [[ -z $file ]]; then
+    print -r -- "$json" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+g = [(f["rfilename"], f.get("size") or 0)
+     for f in d.get("siblings", []) if f["rfilename"].endswith(".gguf")]
+if not g:
+    print("  no GGUF files here — this is probably the full-precision repo.")
+    print("  try the -GGUF variant of the same name.")
+    sys.exit(1)
+print("GGUFs available (smallest first):")
+for n, s in sorted(g, key=lambda x: x[1]):
+    print(f"  {s/2**30:6.1f} GB  {n}")
+'
+    local rc=$?
+    [[ $rc -eq 0 ]] && echo "\nthen: code-llm-download $repo <file.gguf>"
+    return $rc
+  fi
+
+  local want
+  want=$(print -r -- "$json" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+print(next((f.get("size") or 0
+            for f in d.get("siblings", []) if f["rfilename"] == sys.argv[1]), 0))
+' "$file")
+
+  if [[ -z $want || $want == 0 ]]; then
+    echo "no such file in $repo: $file"
+    echo "run without a filename to see what's there"
+    return 1
+  fi
+
+  mkdir -p "$LLM_CODER_MODELS_DIR"
+  local dest="$LLM_CODER_MODELS_DIR/${file:t}"
+
+  if [[ -f $dest && $(stat -f '%z' "$dest") == $want ]]; then
+    echo "already have it: $dest"
+    return 0
+  fi
+
+  printf '→ %s / %s\n  %.1f GB → %s\n' "$repo" "$file" $((want/1073741824.0)) "$dest"
+  if ! curl -fL -C - --progress-bar \
+        "https://huggingface.co/$repo/resolve/main/$file" -o "$dest"; then
+    echo "download failed — re-run to resume from where it stopped"
+    return 1
+  fi
+
+  # A truncated GGUF fails at model load with an opaque tensor error rather
+  # than anything that points at the download, so check the size here.
+  local got=$(stat -f '%z' "$dest" 2>/dev/null)
+  if [[ $got != $want ]]; then
+    echo "size mismatch: got $got, expected $want — re-run to resume"
+    return 1
+  fi
+
+  echo "✓ $dest"
+  echo "  start it: code-llm $dest"
 }
