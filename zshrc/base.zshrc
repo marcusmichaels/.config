@@ -53,6 +53,13 @@ optimisejpg() {
 }
 
 code-llm() {
-  local model="${1:-$HOME/.luna/models/Qwen3.5-9B-Q4_K_M.gguf}"
-  llama-server -m "$model" --port 1337 -c 65536
+  local model="${1:-$HOME/.luna/models/Qwen3.8-27B-UD-Q4_K_XL.gguf}"
+  llama-server -m "$model" \
+    --port 1337 \
+    -c 65536 \
+    --jinja \
+    -fa on \
+    -ctk q4_0 -ctv q4_0 \
+    -cram 2048 \
+    -ctxcp 8
 }
