@@ -16,7 +16,7 @@
       },
       "default_config_options": {
         "mode": "auto",
-        "model": "opus[1m]",
+        "model": "opus",
         "effort": "default"
       },
       "type": "registry"
@@ -33,6 +33,9 @@
   "format_on_save": "on",
   "tab_size": 2,
   "agent": {
+    "auto_compact": {
+      "threshold": "90%"
+    },
     "default_profile": "write",
     "tool_permissions": {
       "tools": {
@@ -75,27 +78,21 @@
     },
     "dock": "right",
     "expand_terminal_card": true,
-    "default_model": { "effort": "high", "enable_thinking": true, "provider": "copilot_chat", "model": "claude-opus-4.8" },
+    "default_model": { "enable_thinking": false, "provider": "llama.cpp", "model": "Local Coder" },
     "model_parameters": []
   },
   "language_models": {
-    "openai_compatible": {
-      "Local Coder": {
-        "api_url": "http://localhost:1337/v1",
-        "available_models": [
-          {
-            "name": "Qwen3.5-9B-Q4_K_M.gguf",
-            "display_name": "Qwen 3.5 9B",
-            "max_tokens": 65536,
-            "capabilities": {
-              "tools": true,
-              "images": false,
-              "parallel_tool_calls": false,
-              "prompt_cache_key": false
-            }
-          }
-        ]
-      }
+    "llama.cpp": {
+      "api_url": "http://localhost:1337",
+      "auto_discover": false,
+      "available_models": [
+        {
+          "name": "Local Coder",
+          "max_tokens": 32768,
+          "supports_tools": true,
+          "supports_images": false
+        }
+      ]
     }
   },
   "lsp": {

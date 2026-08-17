@@ -52,14 +52,5 @@ optimisejpg() {
   done
 }
 
-code-llm() {
-  local model="${1:-$HOME/.luna/models/Qwen3.8-27B-UD-Q4_K_XL.gguf}"
-  llama-server -m "$model" \
-    --port 1337 \
-    -c 65536 \
-    --jinja \
-    -fa on \
-    -ctk q4_0 -ctv q4_0 \
-    -cram 2048 \
-    -ctxcp 8
-}
+# Local LLM servers (code-llm and friends)
+source ~/.config/zshrc/llm.zshrc
