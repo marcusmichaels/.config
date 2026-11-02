@@ -1,8 +1,11 @@
 # llama.cpp coding server — backs Zed's "Local Coder" provider.
 # See ~/.config/zed/settings.json → language_models.openai_compatible.
-# Independent of Luna (~/Sites/localluna); it just shares the models dir.
+# Independent of Luna (~/Desktop/luna); it just shares the models dir and
+# llama.cpp build — and can't run beside her models on 24GB (it froze the Mac).
 
 LLM_CODER_PORT=1337
+# Luna's own llama.cpp build: llama-server isn't on PATH
+LLM_CODER_BIN="$HOME/.luna/bin/llama-server"
 # Shared with Luna today so nothing has to move. Point this somewhere else if
 # you want the coder's models fully separate — code-llm-download writes here.
 LLM_CODER_MODELS_DIR="$HOME/.luna/models"
@@ -19,8 +22,16 @@ LLM_CODER_PID="$HOME/.luna/coder.pid"
 #   --jinja          use the model's own chat template — required for tool
 #                    calls to format correctly.
 #   -ctk/-ctv q8_0   quantised KV cache; q4_0 halves it again if memory is tight.
+#   code-llm [model.gguf] [context]   context defaults to 65536
 code-llm() {
-  local model="${1:-$LLM_CODER_MODEL}"
+  local model="${1:-$LLM_CODER_MODEL}" ctx="${2:-65536}"
+
+  # Luna's chat model (8085) or image engine (8009) loaded too is more than
+  # 24GB of unified memory holds
+  if lsof -ti :8085 -sTCP:LISTEN >/dev/null 2>&1 || lsof -ti :8009 -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "Luna's models are running — stop them first (cd ~/Desktop/luna && make stop-all)"
+    return 1
+  fi
 
   if [[ -f $LLM_CODER_PID ]] && kill -0 "$(<$LLM_CODER_PID)" 2>/dev/null; then
     echo "already running (PID $(<$LLM_CODER_PID)) — run code-llm-stop first"
@@ -33,9 +44,9 @@ code-llm() {
   fi
 
   mkdir -p "${LLM_CODER_LOG:h}"
-  nohup llama-server -m "$model" \
+  nohup "$LLM_CODER_BIN" -m "$model" \
     --port $LLM_CODER_PORT \
-    -c 65536 \
+    -c "$ctx" \
     --jinja \
     -fa on \
     --parallel 1 \
