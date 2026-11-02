@@ -262,7 +262,7 @@ If typecheck/lint can't run cleanly because of the symlinked-worktree environmen
 
 These must read like PRs I opened by hand.
 
-- **Author:** my real identity — `hello@marcusmichaels.com`, normal `git commit`. **No**
+- **Author:** my real identity — normal `git commit`. **No**
   `Co-Authored-By` trailer (standing preference). No bot prefix anywhere.
 - **Assignee:** me — `gh pr create --assignee @me`.
 - **Branch:** `<rule>/<short-slug>` — obviously my branch, still groups by

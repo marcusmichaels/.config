@@ -104,7 +104,7 @@ it never blocks waiting for input. The worktree, build, push, and PR follow the
 
 Like a PR I opened by hand, but framed for a behaviour-*changing* fix.
 
-- **Author/assignee:** `hello@marcusmichaels.com`, no `Co-Authored-By` trailer; assigned to
+- **Author/assignee:** your normal git identity, no `Co-Authored-By` trailer; assigned to
   me; no labels.
 - **Branch:** `fix/<slug>` (conventional type inferred from the task — `fix/`,
   `feat/`, `chore/` — defaulting to `fix/` for bug work). The branch name is the

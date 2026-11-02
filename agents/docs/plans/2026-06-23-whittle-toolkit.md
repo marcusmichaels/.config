@@ -17,7 +17,7 @@
 - **Safety rails (non-negotiable):** never push to `main`/default branch; always create+checkout the run branch before editing; never force-push / rewrite history / delete branches; no destructive git (`reset --hard`, `clean -fd`, `checkout -- .`); refuse a dirty starting tree; edits scoped to the single target instance; no `rm -rf`; no remote mutations beyond opening+assigning the one PR; clean abort leaving no orphan branch/PR; single-run lockfile at `.git/whittle.lock`.
 - **Run constraints:** one rule per run; one instance per PR; ≤300 lines net; silence is success; no drive-by changes; dedup against own open PRs by branch prefix; conform to the target repo's `AGENTS.md`/`CLAUDE.md` if present; never open a red PR.
 - **Unattended:** fully autonomous (no mid-run prompts); every wait bounded (Vercel poll ≤90s); ends with a one-line outcome summary.
-- **PR shape:** author `hello@marcusmichaels.com`, no `Co-Authored-By` trailer, no bot prefix; assignee `@me`; branch `<rule>/<short-slug>`; Conventional Commits title; body sections **What** / **Why this is behaviour-preserving** / **How to test**; no labels; no footer.
+- **PR shape:** author: your normal git identity, no `Co-Authored-By` trailer, no bot prefix; assignee `@me`; branch `<rule>/<short-slug>`; Conventional Commits title; body sections **What** / **Why this is behaviour-preserving** / **How to test**; no labels; no footer.
 - **Starter rules:** `canonical-tailwind-classes`, `flatten-else-after-return`, `unreachable-code-removal`.
 
 ---
@@ -82,7 +82,7 @@ Expected: directory listing shows `rules/`, `SKILL.md`; the head shows the front
 - [ ] **Step 4: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/whittle && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(whittle): scaffold skill skeleton"
+cd ~/.config && git add agents/skills/whittle && git commit -m "feat(whittle): scaffold skill skeleton"
 ```
 
 ---
@@ -138,7 +138,7 @@ In a repo without these, the Storybook/preview lines are simply omitted.
 - [ ] **Step 2: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/whittle/README.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "docs(whittle): add README with setup and ffern config"
+cd ~/.config && git add agents/skills/whittle/README.md && git commit -m "docs(whittle): add README with setup and ffern config"
 ```
 
 ---
@@ -216,7 +216,7 @@ Expected: zero or more matches print without error (validates the grep is well-f
 - [ ] **Step 3: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/whittle/rules/flatten-else-after-return.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(whittle): add flatten-else-after-return rule"
+cd ~/.config && git add agents/skills/whittle/rules/flatten-else-after-return.md && git commit -m "feat(whittle): add flatten-else-after-return rule"
 ```
 
 ---
@@ -330,7 +330,7 @@ Expected: both commands run without regex errors (matches optional).
 - [ ] **Step 4: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/whittle/rules && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(whittle): add unreachable-code and canonical-tailwind rules"
+cd ~/.config && git add agents/skills/whittle/rules && git commit -m "feat(whittle): add unreachable-code and canonical-tailwind rules"
 ```
 
 ---
@@ -417,7 +417,7 @@ Expected: a count ≥ 4 (each anchor present).
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/whittle/SKILL.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(whittle): doctrine, safety rails, invocation"
+cd ~/.config && git add agents/skills/whittle/SKILL.md && git commit -m "feat(whittle): doctrine, safety rails, invocation"
 ```
 
 ---
@@ -454,7 +454,7 @@ Follow in order. Stop (silently, releasing the lock) at any "no clean instance".
    behaviour-preservation per the rule's `## Why behaviour-preserving`.
 8. **Verify locally** (see Local verification). If it fails and you cannot fix it
    within scope, `git checkout main && git branch -D <branch>`, release lock, STOP.
-9. Commit (author `hello@marcusmichaels.com`, no co-author trailer, Conventional Commits
+9. Commit (your normal git identity, no co-author trailer, Conventional Commits
    title) and push the run branch.
 10. Open the PR assigned to me (see PR format).
 11. Resolve preview links and edit them into the body (see Resolving preview links).
@@ -469,7 +469,7 @@ Expected: each step phrase appears once.
 - [ ] **Step 3: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/whittle/SKILL.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(whittle): per-run procedure"
+cd ~/.config && git add agents/skills/whittle/SKILL.md && git commit -m "feat(whittle): per-run procedure"
 ```
 
 ---
@@ -514,7 +514,7 @@ Expected: each phrase present.
 - [ ] **Step 3: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/whittle/SKILL.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(whittle): local verification gate"
+cd ~/.config && git add agents/skills/whittle/SKILL.md && git commit -m "feat(whittle): local verification gate"
 ```
 
 ---
@@ -537,7 +537,7 @@ Replace the empty `## PR format` with:
 
 Reads like a PR I opened by hand.
 
-- **Commit/author:** `git commit` as `hello@marcusmichaels.com`. No `Co-Authored-By`
+- **Commit/author:** `git commit` with your normal git identity. No `Co-Authored-By`
   trailer. Conventional Commits subject, no bot prefix —
   e.g. `refactor: drop redundant else after early return in CheckoutSummary`.
 - **Open it assigned to me, no labels:**
@@ -593,7 +593,7 @@ Expected: each phrase present.
 - [ ] **Step 4: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/whittle/SKILL.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(whittle): PR format and outcome summary"
+cd ~/.config && git add agents/skills/whittle/SKILL.md && git commit -m "feat(whittle): PR format and outcome summary"
 ```
 
 ---
@@ -670,7 +670,7 @@ Expected: no `EMPTY:` lines printed.
 - [ ] **Step 4: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/whittle/SKILL.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(whittle): preview-link resolution and rule index"
+cd ~/.config && git add agents/skills/whittle/SKILL.md && git commit -m "feat(whittle): preview-link resolution and rule index"
 ```
 
 ---

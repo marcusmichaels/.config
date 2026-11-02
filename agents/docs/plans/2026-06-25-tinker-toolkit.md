@@ -17,9 +17,9 @@
 - **Autonomous phase asks no questions:** decide-and-document, or stop tidily; never block on input.
 - **CI watch-loop:** poll PR checks; fix failures in the same worktree; **≤3 fix attempts**; green → done; stuck → `gh pr ready --undo` (draft) + summary comment. Worktree **persists** through the loop, torn down at loop end.
 - **Verification:** no local typecheck/lint; `turbo run format` only; CI is the gate and the signal.
-- **PR:** author `hello@marcusmichaels.com`, no `Co-Authored-By` trailer; assignee `@me`; branch `fix/<slug>` (conventional type); Conventional Commits title; body = **Root cause / The fix / How to test**; no labels; no footer.
+- **PR:** author: your normal git identity, no `Co-Authored-By` trailer; assignee `@me`; branch `fix/<slug>` (conventional type); Conventional Commits title; body = **Root cause / The fix / How to test**; no labels; no footer.
 - **Safety rails (shared, non-destructive):** never push `main`/default branch; all work in the ephemeral worktree, never the primary checkout; claim-by-branch; never force-push / rewrite history / delete others' branches; no destructive git; no remote mutations beyond the one PR; clean teardown on exit.
-- **Commits** into `~/.config` use `git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels"`; no `Co-Authored-By` trailer.
+- **Commits** into `~/.config` use the repo's own git identity (plain `git commit`); no `Co-Authored-By` trailer.
 
 ---
 
@@ -125,7 +125,7 @@ gh pr create --assignee "@me" --base main --head "<branch>" \
   --body-file <tmpfile>
 ```
 
-No labels. Commit as `hello@marcusmichaels.com` with no `Co-Authored-By` trailer. The PR
+No labels. Commit with your normal git identity, with no `Co-Authored-By` trailer. The PR
 body structure is the caller's (whittle and tinker differ).
 
 ## Teardown
@@ -144,7 +144,7 @@ Expected: the six headers — Claim by branch name, Worktree setup, Building "Ho
 - [ ] **Step 4: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/_shared && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(agents): add shared worktree + PR playbook"
+cd ~/.config && git add agents/skills/_shared && git commit -m "feat(agents): add shared worktree + PR playbook"
 ```
 
 ---
@@ -209,7 +209,7 @@ Expected: `0`. (A conceptual mention of `git worktree add` may remain in whittle
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/whittle/SKILL.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "refactor(whittle): reference shared worktree + PR playbook"
+cd ~/.config && git add agents/skills/whittle/SKILL.md && git commit -m "refactor(whittle): reference shared worktree + PR playbook"
 ```
 
 ---
@@ -297,7 +297,7 @@ Expected: valid frontmatter (`---`, `name: tinker`, `description:`, `allowed-too
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/tinker && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(tinker): scaffold skill skeleton + README"
+cd ~/.config && git add agents/skills/tinker && git commit -m "feat(tinker): scaffold skill skeleton + README"
 ```
 
 ---
@@ -375,7 +375,7 @@ Expected: ≥ 3.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/tinker/SKILL.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(tinker): overview, investigation phase, gate"
+cd ~/.config && git add agents/skills/tinker/SKILL.md && git commit -m "feat(tinker): overview, investigation phase, gate"
 ```
 
 ---
@@ -407,7 +407,7 @@ PR body, and press on. Never block on input.
 2. Implement the agreed fix in `$WT` — scoped to the brief, no drive-by edits.
 3. `turbo run format` on the changed files. (No local typecheck/lint — CI is the
    signal; see Verification.)
-4. Commit (`hello@marcusmichaels.com`, no co-author trailer, Conventional Commits title) and
+4. Commit (your normal git identity, no co-author trailer, Conventional Commits title) and
    push the branch from `$WT`.
 5. Open the PR assigned to me (see PR format), build its How-to-test and resolve
    preview links per the shared playbook.
@@ -448,7 +448,7 @@ Expected: ≥ 4.
 - [ ] **Step 4: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/tinker/SKILL.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(tinker): autonomous build and CI watch-loop"
+cd ~/.config && git add agents/skills/tinker/SKILL.md && git commit -m "feat(tinker): autonomous build and CI watch-loop"
 ```
 
 ---
@@ -471,7 +471,7 @@ Replace the empty `## PR format` with:
 
 Like a PR I opened by hand, framed for a behaviour-*changing* fix.
 
-- **Author/assignee:** commit as `hello@marcusmichaels.com`, no `Co-Authored-By` trailer;
+- **Author/assignee:** commit with your normal git identity, no `Co-Authored-By` trailer;
   `gh pr create --assignee "@me"`; no labels.
 - **Branch:** `fix/<slug>` (or `feat/`/`chore/` if clearly otherwise).
 - **Title:** Conventional Commits — e.g.
@@ -559,7 +559,7 @@ Expected: every section reports ≥ 3 content lines (none empty).
 - [ ] **Step 6: Commit**
 
 ```bash
-cd ~/.config && git add agents/skills/tinker/SKILL.md && git -c user.email="hello@marcusmichaels.com" -c user.name="Marcus Michaels" commit -m "feat(tinker): PR format, verification, safety rails, outcome summary"
+cd ~/.config && git add agents/skills/tinker/SKILL.md && git commit -m "feat(tinker): PR format, verification, safety rails, outcome summary"
 ```
 
 ---

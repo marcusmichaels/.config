@@ -90,7 +90,7 @@ branch claim in step 6, not from any lock.
    (single instance only) and re-read the surrounding code to confirm
    behaviour-preservation per the rule's `## Why behaviour-preserving`.
 8. **Verify locally** (best-effort — see Local verification).
-9. Commit (author `hello@marcusmichaels.com`, no co-author trailer, Conventional Commits
+9. Commit (your normal git identity, no co-author trailer, Conventional Commits
    title) and push the run branch from `$WT`.
 10. Open the PR assigned to me (see PR format).
 11. Resolve preview links and edit them into the body (see Resolving preview links).
@@ -129,7 +129,7 @@ obviously-broken PR.
 
 Reads like a PR I opened by hand.
 
-- **Commit/author:** `git commit` as `hello@marcusmichaels.com`. No `Co-Authored-By`
+- **Commit/author:** `git commit` with your normal git identity. No `Co-Authored-By`
   trailer. Conventional Commits subject, no bot prefix —
   e.g. `refactor: drop redundant else after early return in CheckoutSummary`.
 - **Open it assigned to me, no labels:**

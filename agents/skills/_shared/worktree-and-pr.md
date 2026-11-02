@@ -81,7 +81,7 @@ gh pr create --assignee "@me" --base main --head "<branch>" \
   --body-file <tmpfile>
 ```
 
-No labels. Commit as `hello@marcusmichaels.com` with no `Co-Authored-By` trailer. The PR
+No labels. Commit with your normal git identity, with no `Co-Authored-By` trailer. The PR
 body structure is the caller's (whittle and tinker differ).
 
 ## Teardown

@@ -58,7 +58,7 @@ PR body, and press on. Never block on input.
 2. Implement the agreed fix in `$WT` — scoped to the brief, no drive-by edits.
 3. `turbo run format` on the changed files. (No local typecheck/lint — CI is the
    signal; see Verification.)
-4. Commit (`hello@marcusmichaels.com`, no co-author trailer, Conventional Commits title) and
+4. Commit (your normal git identity, no co-author trailer, Conventional Commits title) and
    push the branch from `$WT`.
 5. Open the PR assigned to me (see PR format), build its How-to-test and resolve
    preview links per `~/.config/agents/skills/_shared/worktree-and-pr.md`
@@ -89,7 +89,7 @@ exactly which check beat it.
 
 Like a PR I opened by hand, framed for a behaviour-*changing* fix.
 
-- **Author/assignee:** commit as `hello@marcusmichaels.com`, no `Co-Authored-By` trailer;
+- **Author/assignee:** commit with your normal git identity, no `Co-Authored-By` trailer;
   `gh pr create --assignee "@me"`; no labels.
 - **Branch:** `fix/<slug>` (or `feat/`/`chore/` if clearly otherwise).
 - **Title:** Conventional Commits — e.g.
